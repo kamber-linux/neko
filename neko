@@ -29,7 +29,7 @@ do_patch()
 		echo "\033[36;1mneko\033[0m: Applying patches..."
 		cd ${wrksrc}
 		for patch in ../../srcpkgs/${1}/patches/*.patch; do
-			echo "\033[36;1mneko\033[0m: Applying patch \033[1m${patch}\033[0m"
+			echo "\033[36;1mneko\033[0m: Applying patch \033[1m${patch##*/}\033[0m"
 			patch -Np1 < ${patch}
 		done && echo "\033[32;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
 		cd ..
