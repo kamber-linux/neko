@@ -36,7 +36,7 @@ do_build()
 }
 
 case ${1} in
-	pkg)
+	em | emerge)
 		[ -d srcpkgs/${2} ] && . srcpkgs/${2}/template && echo "\033[36;1mneko\033[0m: Changing into \033[1mmaster\033[0m directory..." || { echo "\033[31;1mneko\033[0m: No template for \033[1m$2\033[0m found" && exit 1; }
 		cd master
 		do_fetch ${2}
