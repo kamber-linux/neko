@@ -4,14 +4,22 @@
 do_fetch()
 {
 	echo "\033[36;1mneko\033[0m: Fetching distfiles for ${1}..."
-	wget ${distfiles} && echo "\033[36;1mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
+	wget ${distfiles} && echo "\033[32;1mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
+}
+
+do_check()
+{
+	echo "\033[36;1mneko\033[0m: Checking SHA-256 sums of distfiles for ${1}..."
+	echo "\033[1mCheck sum in template:\033[0m    ${checksum}"
+	echo "\033[1mCheck sum from distfiles:\033[0m $(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')"
+	[ "$(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')" = "${checksum}" ] && echo "\033[32;1mneko\033[0m: Check sums match!" || { echo "\033[31;1mneko\033[0m: Check sums do not match! Aborting!" && exit 1; }
 }
 
 do_extract()
 {
 	wrksrc=${pkgname}-${version}
 	echo "\033[36;1mneko\033[0m: Extracting distfiles for ${1}..."
-	tar -zxvf ${wrksrc}.tar.gz && echo "\033[36;1mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[31;1mneko\033[0m: Failed to extract distfiles!" && exit 1; }
+	tar -zxvf ${wrksrc}.tar.gz && echo "\033[32;1mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[31;1mneko\033[0m: Failed to extract distfiles!" && exit 1; }
 }
 
 do_patch()
@@ -23,7 +31,7 @@ do_patch()
 		for patch in ../../srcpkgs/${1}/patches/*.patch; do
 			echo "\033[36;1mneko\033[0m: Applying patch \033[1m${patch}\033[0m"
 			patch -Np1 < ${patch}
-		done && echo "\033[36;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
+		done && echo "\033[32;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
 		cd ..
 	fi
 }
@@ -40,13 +48,14 @@ case ${1} in
 		[ -d srcpkgs/${2} ] && . srcpkgs/${2}/template && echo "\033[36;1mneko\033[0m: Changing into \033[1mmaster\033[0m directory..." || { echo "\033[31;1mneko\033[0m: No template for \033[1m$2\033[0m found" && exit 1; }
 		cd master
 		do_fetch ${2}
+		do_check ${2}
 		do_extract ${2}
 		do_patch ${2}
-		do_build ${2} && echo "\033[36;1mneko\033[0m: Built ${2} successfully!" || echo "\033[31;1mneko\033[0m: Build for ${2} failed"
+		do_build ${2} && echo "\033[32;1mneko\033[0m: Built ${2} successfully!" || echo "\033[31;1mneko\033[0m: Build for ${2} failed"
 		;;
 	clean)
 		echo "\033[36;1mneko\033[0m: Cleaning master directory..."
-		rm -rf master/* && echo "\033[36;1mneko\033[0m: Master directory cleaned successfully!" || echo "\033[31;1mneko\033[0m: Failed to clean master directory!"
+		rm -rf master/* && echo "\033[32;1mneko\033[0m: Master directory cleaned successfully!" || echo "\033[31;1mneko\033[0m: Failed to clean master directory!"
 		;;
 	*) echo "\033[31;1mneko\033[0m: Unknown option \033[1m${1}\033[0m" ;;
 esac

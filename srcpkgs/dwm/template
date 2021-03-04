@@ -2,3 +2,4 @@ pkgname=dwm
 version=6.2
 homepage=https://${pkgname}.suckless.org
 distfiles=https://dl.suckless.org/${pkgname}/${pkgname}-${version}.tar.gz
+checksum="97902e2e007aaeaa3c6e3bed1f81785b817b7413947f1db1d3b62b8da4cd110e"
