@@ -13,19 +13,19 @@ do_fetch()
 	else
 		echo "\033[1m=> \033[31mneko\033[0m: No distfiles or git url specified for ${1}" && exit 1
 	fi
+	[ -z ${wrksrc} ] && wrksrc=${pkgname}-${version}
 }
 
 do_check()
 {
 	echo "\033[1m=> \033[36mneko\033[0m: Checking SHA-256 sums of distfiles for \033[1m${1}\033[0m..."
 	echo "\033[1m=> \033[36mneko\033[0m: \033[1mCheck sum in template:\033[0m    ${checksum}"
-	echo "\033[1m=> \033[36mneko\033[0m: \033[1mCheck sum from distfiles:\033[0m $(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')"
-	[ "$(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')" = "${checksum}" ] && echo "\033[1m=> \033[32mneko\033[0m: Check sums match!" || { echo "\033[1m=> \033[31mneko\033[0m: Check sums do not match! Aborting!" && exit 1; }
+	echo "\033[1m=> \033[36mneko\033[0m: \033[1mCheck sum from distfiles:\033[0m $(sha256sum ${wrksrc}.tar.gz | awk '{print $1}')"
+	[ "$(sha256sum ${wrksrc}.tar.gz | awk '{print $1}')" = "${checksum}" ] && echo "\033[1m=> \033[32mneko\033[0m: Check sums match!" || { echo "\033[1m=> \033[31mneko\033[0m: Check sums do not match! Aborting!" && exit 1; }
 }
 
 do_extract()
 {
-	wrksrc=${pkgname}-${version}
 	echo "\033[1m=> \033[36mneko\033[0m: Extracting distfiles for \033[1m${1}\033[0m..."
 	tar -zxvf ${wrksrc}.tar.gz && echo "\033[1m=> \033[32mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to extract distfiles!" && exit 1; }
 }
@@ -47,7 +47,7 @@ do_patch()
 do_build()
 {
 	echo "\033[1m=> \033[36mneko\033[0m: Building \033[1m${1}\033[0m..."
-	[ ${distfiles} ] && cd ${wrksrc} || cd ${pkgname}
+	[ ${distfiles} ] && cd ${pkgname}-${version} || cd ${pkgname}
 	make
 }
 
