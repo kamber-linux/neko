@@ -35,7 +35,7 @@ do_patch()
 	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[1m=> \033[33mneko\033[0m: There is a patch folder for \033[1m${1}\033[0m, but no patches..."
 	if [ -f ../srcpkgs/${1}/patches/*.patch ]; then
 		echo "\033[1m=> \033[36mneko\033[0m: Applying patches..."
-		cd ${wrksrc}
+		[ ${distfiles} ] && cd ${wrksrc} || cd ${pkgname}
 		for patch in ../../srcpkgs/${1}/patches/*.patch; do
 			echo "\033[1m=> \033[36mneko\033[0m: Applying patch \033[1m${patch##*/}\033[0m"
 			patch -Np1 < ${patch}

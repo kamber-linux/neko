@@ -1,0 +1,21 @@
+--- a/Makefile	2021-03-04 14:50:39.130649415 -0700
++++ b/Makefile	2021-03-04 14:52:46.905639592 -0700
+@@ -120,7 +120,6 @@
+ 	kill\
+ 	link\
+ 	ln\
+-	logger\
+ 	logname\
+ 	ls\
+ 	md5sum\
+--- a/config.mk	2021-03-04 14:51:20.634646224 -0700
++++ b/config.mk	2021-03-04 14:51:06.644647299 -0700
+@@ -5,7 +5,7 @@
+ PREFIX = /usr/local
+ MANPREFIX = $(PREFIX)/share/man
+ 
+-CC = cc
++CC = tcc
+ AR = ar
+ RANLIB = ranlib
+ 
