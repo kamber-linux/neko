@@ -17,18 +17,15 @@ do_extract()
 do_patch()
 {
 	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[33;1mneko\033[0m: There is a patch folder for ${1}, but no patches..."
-	if [ -d ../srcpkgs/${1}/patches ]; then
+	if [ -f ../srcpkgs/${1}/patches/*.patch ]; then
 		echo "\033[36;1mneko\033[0m: Applying patches..."
 		cd ${wrksrc}
 		for patch in ../../srcpkgs/${1}/patches/*; do
 			echo "\033[36;1mneko\033[0m: Applying patch \033[1m${patch}\033[0m"
 			patch -Np1 < ${patch}
-		done
+		done && echo "\033[36;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
 		cd ..
 	fi
-	for patch in ../../srcpkgs/${1}/patches/*; do
-		echo $patch
-	done
 }
 
 do_build()
@@ -44,7 +41,7 @@ case ${1} in
 		cd master
 		do_fetch ${2}
 		do_extract ${2}
-		do_patch ${2} && echo "\033[36;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
+		do_patch ${2}
 		do_build ${2} && echo "\033[36;1mneko\033[0m: Build successfull!" || echo "\033[31;1mneko\033[0m: Build failed"
 		;;
 	clean)
