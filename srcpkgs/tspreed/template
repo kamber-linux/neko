@@ -1,0 +1,5 @@
+pkgname=tspreed
+version=1.2.2
+homepage="https://github.com/n-ivkovic/${pkgname}"
+giturl="${homepage}.git"
+checksum="d42d3ceceb4d6a65e32e90a5336e3d446db612c3fbd9ebc1780bc6c9a03346a6"

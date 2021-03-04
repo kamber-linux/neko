@@ -3,8 +3,15 @@
 
 do_fetch()
 {
-	echo "\033[1m=> \033[36mneko\033[0m: Fetching distfiles for \033[1m${1}\033[0m..."
-	wget ${distfiles} && echo "\033[1m=> \033[32mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
+	if [ ${distfiles} ]; then
+		echo "\033[1m=> \033[36mneko\033[0m: Fetching distfiles for \033[1m${1}\033[0m..."
+		wget ${distfiles} && echo "\033[1m=> \033[32mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
+	elif [ ${giturl} ]; then
+		echo "\033[1m=> \033[36mneko\033[0m: Cloning git repo for ${1} \033[1m${1}\033[0m..."
+		git clone ${giturl} && echo "\033[1m=> \033[32mneko\033[0m: Cloned git repo successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to clone git repo!" && exit 1; }
+	else
+		echo "\033[1m=> \033[31mneko\033[0m: No distfiles or git url specified for ${1}" && exit 1
+	fi
 }
 
 do_check()
@@ -39,7 +46,7 @@ do_patch()
 do_build()
 {
 	echo "\033[1m=> \033[36mneko\033[0m: Building \033[1m${1}\033[0m..."
-	cd ${wrksrc}
+	[ ${distfiles} ] && cd ${wrksrc} || cd ${pkgname}
 	make
 }
 
@@ -48,8 +55,8 @@ case ${1} in
 		[ -d srcpkgs/${2} ] && . srcpkgs/${2}/template && echo "\033[1m=> \033[36mneko\033[0m: Changing into \033[1mmaster\033[0m directory..." || { echo "\033[1m=> \033[31mneko\033[0m: No template for \033[1m$2\033[0m found" && exit 1; }
 		cd master
 		do_fetch ${2}
-		do_check ${2}
-		do_extract ${2}
+		[ ${distfiles} ] && do_check ${2}
+		[ ${distfiles} ] && do_extract ${2}
 		do_patch ${2}
 		do_build ${2} && echo "\033[1m=> \033[32mneko\033[0m: Built \033[1m${2}\033[0m successfully!" || echo "\033[1m=> \033[31mneko\033[0m: Build for \033[1m${2}\033[0m failed"
 		;;
