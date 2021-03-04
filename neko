@@ -4,14 +4,14 @@
 do_fetch()
 {
 	echo "\033[36;1mneko\033[0m: Fetching distfiles for ${1}..."
-	wget ${distfiles} && echo "\033[36;1mneko\033[0m: Fetched distfiles successfully!" || echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!"
+	wget ${distfiles} && echo "\033[36;1mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
 }
 
 do_extract()
 {
 	wrksrc=${pkgname}-${version}
 	echo "\033[36;1mneko\033[0m: Extracting distfiles for ${1}..."
-	tar -zxvf ${wrksrc}.tar.gz
+	tar -zxvf ${wrksrc}.tar.gz && echo "\033[36;1mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[31;1mneko\033[0m: Failed to extract distfiles!" && exit 1; }
 }
 
 do_patch()
@@ -42,11 +42,11 @@ case ${1} in
 		do_fetch ${2}
 		do_extract ${2}
 		do_patch ${2}
-		do_build ${2} && echo "\033[36;1mneko\033[0m: Build successfull!" || echo "\033[31;1mneko\033[0m: Build failed"
+		do_build ${2} && echo "\033[36;1mneko\033[0m: Built ${2} successfully!" || echo "\033[31;1mneko\033[0m: Build for ${2} failed"
 		;;
 	clean)
 		echo "\033[36;1mneko\033[0m: Cleaning master directory..."
-		rm -rf master/* && echo "\033[36;1mneko\033[0m: Master directory cleaned!" || echo "\033[31;1mneko\033[0m: Failed to clean master directory!"
+		rm -rf master/* && echo "\033[36;1mneko\033[0m: Master directory cleaned successfully!" || echo "\033[31;1mneko\033[0m: Failed to clean master directory!"
 		;;
 	*) echo "\033[31;1mneko\033[0m: Unknown option \033[1m${1}\033[0m" ;;
 esac
