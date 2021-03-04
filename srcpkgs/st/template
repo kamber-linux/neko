@@ -1,0 +1,4 @@
+pkgname=st
+version=0.8.4
+homepage=https://${pkgname}.suckless.org
+distfiles=https://dl.suckless.org/${pkgname}/${pkgname}-${version}.tar.gz

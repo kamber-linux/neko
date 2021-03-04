@@ -1,0 +1,56 @@
+#!/bin/sh
+
+
+do_fetch()
+{
+	echo "\033[36;1mneko\033[0m: Fetching distfiles for ${1}..."
+	wget ${distfiles} && echo "\033[36;1mneko\033[0m: Fetched distfiles successfully!" || echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!"
+}
+
+do_extract()
+{
+	wrksrc=${pkgname}-${version}
+	echo "\033[36;1mneko\033[0m: Extracting distfiles for ${1}..."
+	tar -zxvf ${wrksrc}.tar.gz
+}
+
+do_patch()
+{
+	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[33;1mneko\033[0m: There is a patch folder for ${1}, but no patches..."
+	if [ -d ../srcpkgs/${1}/patches ]; then
+		echo "\033[36;1mneko\033[0m: Applying patches..."
+		cd ${wrksrc}
+		for patch in ../../srcpkgs/${1}/patches/*; do
+			echo "\033[36;1mneko\033[0m: Applying patch \033[1m${patch}\033[0m"
+			patch -Np1 < ${patch}
+		done
+		cd ..
+	fi
+	for patch in ../../srcpkgs/${1}/patches/*; do
+		echo $patch
+	done
+}
+
+do_build()
+{
+	echo "\033[36;1mneko\033[0m: Building ${1}..."
+	cd ${wrksrc}
+	make
+}
+
+case ${1} in
+	pkg)
+		echo "\033[36;1mneko\033[0m: Changing into \033[1mmaster\033[0m directory..."
+		cd master
+		[ -d ../srcpkgs/${2} ] && . ../srcpkgs/${2}/template || { echo "\033[31;1mneko\033[0m: No template for \033[1m$2\033[0m found" && exit 1; }
+		do_fetch ${2}
+		do_extract ${2}
+		do_patch ${2} && echo "\033[36;1mneko\033[0m: Patches applied successfully!" || echo "\033[31;1mneko\033[0m: Failed to apply one or more patches!"
+		do_build ${2} && echo "\033[36;1mneko\033[0m: Build successfull!" || echo "\033[31;1mneko\033[0m: Build failed"
+		;;
+	clean)
+		echo "\033[36;1mneko\033[0m: Cleaning master directory..."
+		rm -rf master/* && echo "\033[36;1mneko\033[0m: Master directory cleaned!" || echo "\033[31;1mneko\033[0m: Failed to clean master directory!"
+		;;
+	*) echo "\033[31;1mneko\033[0m: Unknown option \033[1m${1}\033[0m" ;;
+esac

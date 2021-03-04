@@ -1,0 +1,4 @@
+pkgname=bearssl
+version=0.6
+homepage=https://bearssl.org
+distfiles=${homepage}/${pkgname}-${version}.tar.gz

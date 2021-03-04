@@ -1,0 +1,8 @@
+--- a/config.mk	2021-03-03 23:22:09.584881093 -0700
++++ b/config.mk	2021-03-03 23:22:24.289879963 -0700
+@@ -32,4 +32,4 @@
+ #       `$(PKG_CONFIG) --libs freetype2`
+ 
+ # compiler and linker
+-# CC = c99
++CC = tcc
