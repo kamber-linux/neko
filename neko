@@ -3,13 +3,13 @@
 
 do_fetch()
 {
-	echo "\033[36;1mneko\033[0m: Fetching distfiles for ${1}..."
+	echo "\033[36;1mneko\033[0m: Fetching distfiles for \033[1m${1}\033[0m..."
 	wget ${distfiles} && echo "\033[32;1mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[31;1mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
 }
 
 do_check()
 {
-	echo "\033[36;1mneko\033[0m: Checking SHA-256 sums of distfiles for ${1}..."
+	echo "\033[36;1mneko\033[0m: Checking SHA-256 sums of distfiles for \033[1m${1}\033[0m..."
 	echo "\033[1mCheck sum in template:\033[0m    ${checksum}"
 	echo "\033[1mCheck sum from distfiles:\033[0m $(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')"
 	[ "$(sha256sum ${pkgname}-${version}.tar.gz | awk '{print $1}')" = "${checksum}" ] && echo "\033[32;1mneko\033[0m: Check sums match!" || { echo "\033[31;1mneko\033[0m: Check sums do not match! Aborting!" && exit 1; }
@@ -18,13 +18,13 @@ do_check()
 do_extract()
 {
 	wrksrc=${pkgname}-${version}
-	echo "\033[36;1mneko\033[0m: Extracting distfiles for ${1}..."
+	echo "\033[36;1mneko\033[0m: Extracting distfiles for \033[1m${1}\033[0m..."
 	tar -zxvf ${wrksrc}.tar.gz && echo "\033[32;1mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[31;1mneko\033[0m: Failed to extract distfiles!" && exit 1; }
 }
 
 do_patch()
 {
-	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[33;1mneko\033[0m: There is a patch folder for ${1}, but no patches..."
+	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[33;1mneko\033[0m: There is a patch folder for \033[1m${1}\033[0m, but no patches..."
 	if [ -f ../srcpkgs/${1}/patches/*.patch ]; then
 		echo "\033[36;1mneko\033[0m: Applying patches..."
 		cd ${wrksrc}
@@ -38,7 +38,7 @@ do_patch()
 
 do_build()
 {
-	echo "\033[36;1mneko\033[0m: Building ${1}..."
+	echo "\033[36;1mneko\033[0m: Building \033[1m${1}\033[0m..."
 	cd ${wrksrc}
 	make
 }
@@ -51,7 +51,7 @@ case ${1} in
 		do_check ${2}
 		do_extract ${2}
 		do_patch ${2}
-		do_build ${2} && echo "\033[32;1mneko\033[0m: Built ${2} successfully!" || echo "\033[31;1mneko\033[0m: Build for ${2} failed"
+		do_build ${2} && echo "\033[32;1mneko\033[0m: Built \033[1m${2}\033[0m successfully!" || echo "\033[31;1mneko\033[0m: Build for \033[1m${2}\033[0m failed"
 		;;
 	clean)
 		echo "\033[36;1mneko\033[0m: Cleaning master directory..."
