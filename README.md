@@ -27,3 +27,6 @@ Git builds are also planned to be supported. Instead of specifying `distfiles`, 
 To make a patch, go to the source folder and make two folders, `a` and `b`. Copy the file you want to edit into `a`, and copy that into `b`: `cp a/<file> b`. Edit `b/<file>` to the changes you want. Then, `diff -Naur a/<file> b/<file> > <patch_name>.patch`. Make a folder in `srcpkgs/<pkg>` called `patches`, and add the patch there.
 
 The templates will patch in to use TCC by default.
+
+# TODO
+The neko script is a mess. I need to seperate the functions into their own seperate shell script files, probably in another folder. I would also like to make this more fail-proof, as I really had to use disgusting hacks to get the example packages to work.
