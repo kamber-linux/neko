@@ -7,6 +7,7 @@ do_fetch()
 		echo "\033[1m=> \033[36mneko\033[0m: Fetching distfiles for \033[1m${1}\033[0m..."
 		wget ${distfiles} && echo "\033[1m=> \033[32mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
 	elif [ ${giturl} ]; then
+		[ -d ${pkgname} ] && rm -rf ${pkgname}
 		echo "\033[1m=> \033[36mneko\033[0m: Cloning git repo for ${1} \033[1m${1}\033[0m..."
 		git clone ${giturl} && echo "\033[1m=> \033[32mneko\033[0m: Cloned git repo successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to clone git repo!" && exit 1; }
 	else
