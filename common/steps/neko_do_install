@@ -1,0 +1,15 @@
+#!/bin/sh
+
+do_install()
+{
+	case "${build_style}" in
+		"makefile")
+			neko_msg normal "Installing package..."
+			make install &&
+				neko_msg success "Successfully installed ${1}!" ||
+				{ neko_msg error "Failed to install ${1}!" && exit 1; }
+			;;
+	esac
+}
+
+. srcpkgs/${2}/template

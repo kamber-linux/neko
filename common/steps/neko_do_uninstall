@@ -1,0 +1,15 @@
+#!/bin/sh
+
+do_uninstall()
+{
+	case "${build_style}" in
+		"makefile")
+			neko_msg normal "Uninstalling ${1}..."
+			make uninstall &&
+				neko_msg success "Successfully uninstalled ${1}!" ||
+				{ neko_msg error "Failed to uninstall ${1}!" && exit 1; }
+			;;
+	esac
+}
+
+. srcpkgs/${2}/template

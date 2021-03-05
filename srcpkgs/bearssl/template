@@ -4,3 +4,26 @@ homepage=https://bearssl.org
 distfiles=${homepage}/${pkgname}-${version}.tar.gz
 checksum="6705bba1714961b41a728dfc5debbe348d2966c117649392f8c8139efc83ff14"
 build_style=makefile
+
+do_install()
+{
+	mkdir -p ${DESTDIR}/usr/local/bin
+	cp -r build/brssl ${DESTDIR}/usr/local/bin
+	chmod 755 ${DESTIR}/usr/local/bin/brssl
+
+	mkdir -p ${DESTDIR}/usr/local/lib
+	cp -r build/lib${pkgname}.so ${DESTDIR}/usr/local/lib
+	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.so
+	cp -r build/lib${pkgname}.a ${DESTDIR}/usr/local/lib
+	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.a
+
+	mkdir -p ${DESTDIR}/usr/local/include
+	cp -r inc/* ${DESTDIR}/usr/local/include
+}
+
+do_uninstall()
+{
+	rm -rf ${DESTDIR}/usr/local/bin/brssl
+	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.so
+	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.a
+}
