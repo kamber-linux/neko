@@ -2,18 +2,21 @@
 
 # include files
 . common/neko_msg
-for file in prepare fetch check extract patch build install uninstall; do
+for file in prepare fetch check extract patch build install uninstall
+do
 	. common/steps/neko_do_${file}
 done
 
 case "${1}" in
 	"pkg")
-		for step in prepare fetch check extract patch build; do
+		for step in prepare fetch check extract patch build
+		do
 			do_${step} "${2}"
 		done
 		;;
 	"em" | "emerge")
-		for step in prepare fetch check extract patch build install; do
+		for step in prepare fetch check extract patch build install
+		do
 			do_${step} "${2}"
 		done
 		;;
