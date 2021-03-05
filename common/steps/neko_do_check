@@ -1,0 +1,14 @@
+#!/bin/sh
+
+do_check()
+{
+	if [ "${distfiles}" ]; then
+		neko_msg normal "Verifying SHA-256 checksums of distfiles for ${1}..."
+		distfile_checksum=$(sha256sum ${archive} | awk '{print $1}')
+		neko_msg normal "Checksum of distfiles: ${distfile_checksum}"
+		neko_msg normal "Checksum in template: ${checksum}"
+		[ "${checksum}" = "${distfile_checksum}" ] &&
+			neko_msg success "Checksums match!" ||
+			{ neko_msg error "Checksum mismatch! Aborting!" && exit 1; }
+	fi
+}

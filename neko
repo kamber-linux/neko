@@ -1,69 +1,27 @@
 #!/bin/sh
 
+# include files
+. common/neko_msg
+for file in prepare fetch check extract patch build; do
+	. common/steps/neko_do_${file}
+done
 
-do_fetch()
-{
-	if [ ${distfiles} ]; then
-		echo "\033[1m=> \033[36mneko\033[0m: Fetching distfiles for \033[1m${1}\033[0m..."
-		wget ${distfiles} && echo "\033[1m=> \033[32mneko\033[0m: Fetched distfiles successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to fetch distfiles!" && exit 1; }
-	elif [ ${giturl} ]; then
-		[ -d ${pkgname} ] && rm -rf ${pkgname}
-		echo "\033[1m=> \033[36mneko\033[0m: Cloning git repo for ${1} \033[1m${1}\033[0m..."
-		git clone ${giturl} && echo "\033[1m=> \033[32mneko\033[0m: Cloned git repo successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to clone git repo!" && exit 1; }
-	else
-		echo "\033[1m=> \033[31mneko\033[0m: No distfiles or git url specified for ${1}" && exit 1
-	fi
-	[ -z ${wrksrc} ] && wrksrc=${pkgname}-${version}
-}
-
-do_check()
-{
-	echo "\033[1m=> \033[36mneko\033[0m: Checking SHA-256 sums of distfiles for \033[1m${1}\033[0m..."
-	echo "\033[1m=> \033[36mneko\033[0m: \033[1mCheck sum in template:\033[0m    ${checksum}"
-	echo "\033[1m=> \033[36mneko\033[0m: \033[1mCheck sum from distfiles:\033[0m $(sha256sum ${wrksrc}.tar.gz | awk '{print $1}')"
-	[ "$(sha256sum ${wrksrc}.tar.gz | awk '{print $1}')" = "${checksum}" ] && echo "\033[1m=> \033[32mneko\033[0m: Check sums match!" || { echo "\033[1m=> \033[31mneko\033[0m: Check sums do not match! Aborting!" && exit 1; }
-}
-
-do_extract()
-{
-	echo "\033[1m=> \033[36mneko\033[0m: Extracting distfiles for \033[1m${1}\033[0m..."
-	tar -zxvf ${wrksrc}.tar.gz && echo "\033[1m=> \033[32mneko\033[0m: Distfiles extracted successfully!" || { echo "\033[1m=> \033[31mneko\033[0m: Failed to extract distfiles!" && exit 1; }
-}
-
-do_patch()
-{
-	[ -d ../srcpkgs/${1}/patches ] && [ ! -f ../srcpkgs/${1}/patches/*.patch ] && echo "\033[1m=> \033[33mneko\033[0m: There is a patch folder for \033[1m${1}\033[0m, but no patches..."
-	if [ -f ../srcpkgs/${1}/patches/*.patch ]; then
-		echo "\033[1m=> \033[36mneko\033[0m: Applying patches..."
-		[ ${distfiles} ] && cd ${wrksrc} || cd ${pkgname}
-		for patch in ../../srcpkgs/${1}/patches/*.patch; do
-			echo "\033[1m=> \033[36mneko\033[0m: Applying patch \033[1m${patch##*/}\033[0m"
-			patch -Np1 < ${patch}
-		done && echo "\033[1m=> \033[32mneko\033[0m: Patches applied successfully!" || echo "\033[1m=> \033[31mneko\033[0m: Failed to apply one or more patches!"
-		cd ..
-	fi
-}
-
-do_build()
-{
-	echo "\033[1m=> \033[36mneko\033[0m: Building \033[1m${1}\033[0m..."
-	[ ${distfiles} ] && cd ${pkgname}-${version} || cd ${pkgname}
-	make
-}
-
-case ${1} in
-	em | emerge)
-		[ -d srcpkgs/${2} ] && . srcpkgs/${2}/template && echo "\033[1m=> \033[36mneko\033[0m: Changing into \033[1mmaster\033[0m directory..." || { echo "\033[1m=> \033[31mneko\033[0m: No template for \033[1m$2\033[0m found" && exit 1; }
-		cd master
-		do_fetch ${2}
-		[ ${distfiles} ] && do_check ${2}
-		[ ${distfiles} ] && do_extract ${2}
-		do_patch ${2}
-		do_build ${2} && echo "\033[1m=> \033[32mneko\033[0m: Built \033[1m${2}\033[0m successfully!" || echo "\033[1m=> \033[31mneko\033[0m: Build for \033[1m${2}\033[0m failed"
+case "${1}" in
+	"em" | "emerge")
+		do_prepare "${2}"
+		do_fetch "${2}"
+		do_check "${2}"
+		do_extract "${2}"
+		do_patch "${2}"
+		do_build "${2}"
 		;;
-	clean)
-		echo "\033[1m=> \033[36mneko\033[0m: Cleaning master directory..."
-		rm -rf master/* && echo "\033[1m=> \033[32mneko\033[0m: Master directory cleaned successfully!" || echo "\033[1m=> \033[31mneko\033[0m: Failed to clean master directory!"
+	"clean")
+		neko_msg normal "Cleaning master directory..."
+		rm -rf master/* &&
+			neko_msg success "Successfully cleaned master directory!" ||
+			{ neko_msg error "Failed to clean master directory!" && exit 1; }
 		;;
-	*) echo "\033[1m=> \033[31mneko\033[0m: Unknown option \033[1m${1}\033[0m" ;;
+	*)
+		neko_msg error "Unknown option ${1}" && exit 1
+		;;
 esac

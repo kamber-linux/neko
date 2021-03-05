@@ -1,0 +1,15 @@
+#!/bin/sh
+
+do_build()
+{
+	case "${build_style}" in
+		"makefile")
+			neko_msg normal "Building ${1}..."
+			make &&
+				neko_msg success "Successfully built ${1}!" ||
+				{ neko_msg error "Failed to build ${1}!" && exit 1; }
+			;;
+		*)
+			neko_msg error "Unknown build style ${build_style}"
+	esac
+}

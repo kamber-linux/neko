@@ -29,4 +29,4 @@ To make a patch, go to the source folder and make two folders, `a` and `b`. Copy
 The templates will patch in to use TCC by default.
 
 # TODO
-The neko script is a mess. I need to seperate the functions into their own seperate shell script files, probably in another folder. I would also like to make this more fail-proof, as I really had to use disgusting hacks to get the example packages to work.
+I have re-organized the code to be more readable. `neko_old` exists as I can't seem to get the `do_patch` phase to work correctly for some reason.

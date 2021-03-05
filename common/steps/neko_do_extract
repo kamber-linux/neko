@@ -1,0 +1,11 @@
+#!/bin/sh
+
+do_extract()
+{
+	if [ "${distfiles}" ]; then
+		neko_msg normal "Extracting archives for ${1}..."
+		tar zxvf "${archive}" &&
+			neko_msg success "Successfully extracted archives!" ||
+			{ neko_msg error "Failed to extract archives!" && exit 1; }
+	fi
+}
