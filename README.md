@@ -29,4 +29,7 @@ To make a patch, go to the source folder and make two folders, `a` and `b`. Copy
 The templates will patch in to use TCC by default.
 
 # TODO
-I have re-organized the code to be more readable. `neko_old` exists as I can't seem to get the `do_patch` phase to work correctly for some reason.
+* Add in more explicit pre and post steps to make it more fail safe.
+* Add install / uninstall step
+* Add more build styles
+* Add more packages

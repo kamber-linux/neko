@@ -2,15 +2,11 @@
 
 do_patch()
 {
-	echo $(pwd) # in master here (master)
-	[ -d "../${patches_dir}" ] && [ ! -f "../${patches_dir}/?*.patch" ] && neko_msg warning "There is a patches directory, but no patches."
-	ls ../${patches_dir}
-	cd ${wrksrc}
-	echo $(pwd) # in wrksrc here (master/tspreed-1.2.2)
-	if [ -f "../${patches_dir}/*.patch" ]; then
+	[ -d "../${patches_dir}" ] && [ ! -f ../${patches_dir}/*.patch ] && neko_msg warning "There is a patches directory, but no patches."
+	if [ -f ../${patches_dir}/*.patch ]; then
 		cd ${wrksrc}
 		neko_msg normal "Applying patches for ${1}..."
-		for patch in "../../${patches_dir}/*.patch"; do
+		for patch in ../../${patches_dir}/*.patch; do
 			neko_msg normal "Applying patch ${patch##*/}..."
 			patch -Np1 < ${patch}
 		done &&

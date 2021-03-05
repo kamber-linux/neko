@@ -8,12 +8,9 @@ done
 
 case "${1}" in
 	"em" | "emerge")
-		do_prepare "${2}"
-		do_fetch "${2}"
-		do_check "${2}"
-		do_extract "${2}"
-		do_patch "${2}"
-		do_build "${2}"
+		for step in prepare fetch check extract patch build; do
+			do_${step} "${2}"
+		done
 		;;
 	"clean")
 		neko_msg normal "Cleaning master directory..."
