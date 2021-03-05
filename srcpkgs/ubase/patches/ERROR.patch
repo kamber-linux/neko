@@ -1,0 +1,24 @@
+--- a/Makefile	2021-03-04 20:18:13.012138528 -0700
++++ b/Makefile	2021-03-04 20:18:40.557136410 -0700
+@@ -61,21 +61,17 @@
+ 	lsmod             \
+ 	lsusb             \
+ 	mesg              \
+-	mknod             \
+ 	mkswap            \
+ 	mount             \
+-	mountpoint        \
+ 	nologin           \
+ 	pagesize          \
+ 	passwd            \
+ 	pidof             \
+ 	pivot_root        \
+-	ps                \
+ 	pwdx              \
+ 	readahead         \
+ 	respawn           \
+ 	rmmod             \
+-	stat              \
+ 	su                \
+ 	swaplabel         \
+ 	swapoff           \

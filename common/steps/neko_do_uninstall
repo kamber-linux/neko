@@ -11,5 +11,3 @@ do_uninstall()
 			;;
 	esac
 }
-
-. srcpkgs/${2}/template

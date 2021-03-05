@@ -17,14 +17,14 @@ case "${1}" in
 			do_${step} "${2}"
 		done
 		;;
-	"uninstall")
-		do_uninstall "${2}"
-		;;
 	"clean")
 		neko_msg normal "Cleaning master directory..."
 		rm -rf master/* &&
 			neko_msg success "Successfully cleaned master directory!" ||
 			{ neko_msg error "Failed to clean master directory!" && exit 1; }
+		;;
+	"uninstall")
+		do_uninstall "${2}"
 		;;
 	*)
 		neko_msg error "Unknown option \"${1}\"" && exit 1
