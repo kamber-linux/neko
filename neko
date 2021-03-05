@@ -19,6 +19,6 @@ case "${1}" in
 			{ neko_msg error "Failed to clean master directory!" && exit 1; }
 		;;
 	*)
-		neko_msg error "Unknown option ${1}" && exit 1
+		neko_msg error "Unknown option \"${1}\"" && exit 1
 		;;
 esac
