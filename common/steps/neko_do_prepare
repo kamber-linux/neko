@@ -5,13 +5,14 @@ do_prepare()
 	neko_msg normal "Preparing environment for building..."
 	files="srcpkgs/${1}"
 	patches_dir="${files}/patches"
-	. ${files}/template
+	. "${files}"/template
 	archive=${pkgname}-${version}.tar.gz
-	if [ "${giturl}" ]; then
+	if [ "${giturl}" ]
+	then
 		wrksrc="${pkgname}"
 	else
 		wrksrc="${pkgname}-${version}"
 	fi
-	. ${files}/template
-	cd master
+	. "${files}"/template
+	cd master || exit
 }

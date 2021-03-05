@@ -28,16 +28,13 @@ Git builds are also planned to be supported. Instead of specifying `distfiles`, 
 # Making patches (advice appreciated, I'm bad)
 To make a patch, go to the source folder and make two folders, `a` and `b`. Copy the file you want to edit into `a`, and copy that into `b`: `cp a/<file> b`. Edit `b/<file>` to the changes you want. Then, `diff -Naur a/<file> b/<file> > <patch_name>.patch`. Make a folder in `srcpkgs/<pkg>` called `patches`, and add the patch there.
 
-# BUGS
-Multiple patches in `<patches_dir>` doesn't work.
-
 # TODO
-* Fix multiple patches bug
 * Add in more explicit pre and post steps to make it more fail safe.
 * Add more build styles
 * Add more packages
 
 # DONE
+* Fix multiple patches bug
 * Add install / uninstall step
 * Cleanup / seperate bits of code
 * Formatting

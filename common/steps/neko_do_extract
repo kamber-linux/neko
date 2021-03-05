@@ -2,7 +2,8 @@
 
 do_extract()
 {
-	if [ "${distfiles}" ]; then
+	if [ "${distfiles}" ]
+	then
 		neko_msg normal "Extracting archives for ${1}..."
 		tar zxvf "${archive}" &&
 			neko_msg success "Successfully extracted archives!" ||

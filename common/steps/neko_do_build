@@ -2,7 +2,7 @@
 
 do_build()
 {
-	cd ${wrksrc}
+	cd "${wrksrc}" || exit
 	case "${build_style}" in
 		"makefile")
 			neko_msg normal "Building ${1}..."
