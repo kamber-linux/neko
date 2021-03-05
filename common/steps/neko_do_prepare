@@ -13,6 +13,5 @@ do_prepare()
 	else
 		wrksrc="${pkgname}-${version}"
 	fi
-	. "${files}"/template
 	cd master || exit
 }
