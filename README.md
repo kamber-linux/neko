@@ -29,15 +29,9 @@ Git builds are also planned to be supported. Instead of specifying `distfiles`, 
 To make a patch, go to the source folder and make two folders, `a` and `b`. Copy the file you want to edit into `a`, and copy that into `b`: `cp a/<file> b`. Edit `b/<file>` to the changes you want. Then, `diff -Naur a/<file> b/<file> > <patch_name>.patch`. Make a folder in `srcpkgs/<pkg>` called `patches`, and add the patch there.
 
 # TODO
-* Rewrite in C - shell is getting messy
-* Add in more explicit pre and post steps to make it more fail safe.
+* Write a wget alternative in SHELL using BearSSL libraries (make more SSL library agnostic once done)
+* Handle root permissions more effectively (possible something like `logname`, which exists in most userspaces)
+* _POSSIBLY_ rewrite in C - having POSIX shell pkg manager might have advantages
+* Add in more explicit pre and post steps to make it more fail safe
 * Add more build styles
 * Add more packages
-
-# DONE
-* Fix multiple patches bug
-* Add install / uninstall step
-* Cleanup / seperate bits of code
-* Formatting
-* Implement patch system
-* Implement git builds
