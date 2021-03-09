@@ -1,0 +1,7 @@
+pkgname="tabbed"
+version=0.6
+homepage="https://tools.suckless.org/${pkgname}"
+distfiles="https://dl.suckless.org/tools/${pkgname}-${version}.tar.gz"
+checksum="7651ea3acbec5d6a25469e8665da7fc70aba2b4fa61a2a6a5449eafdfd641c42"
+build_style="makefile"
+TCC="false" # tabbed.c:298: error: 'va_list' undeclared
