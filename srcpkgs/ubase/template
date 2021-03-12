@@ -1,4 +1,0 @@
-pkgname=ubase
-homepage=http://core.suckless.org/ubase
-giturl=git://git.suckless.org/ubase
-build_style=makefile
