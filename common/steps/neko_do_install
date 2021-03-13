@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# do_install doesn't do_prepare beforehand
+. srcpkgs/"${2}"/template
+
 do_install()
 {
 	case "${build_style}" in
@@ -11,3 +14,6 @@ do_install()
 			;;
 	esac
 }
+
+# Allow for overrides
+. srcpkgs/"${2}"/template

@@ -2,7 +2,7 @@
 
 # include files
 . common/neko_msg
-for file in prepare fetch check extract patch build install
+for file in prepare fetch check extract patch build
 do
 	. common/steps/neko_do_${file}
 done
@@ -15,6 +15,7 @@ case "${1}" in
 		done
 		;;
 	"em" | "emerge")
+		. common/steps/neko_do_install
 		for step in prepare fetch check extract patch build install
 		do
 			[ "${perms}" = anon ] && neko_msg error "You must have root permissions to emerge packages" && exit 1;
@@ -28,7 +29,15 @@ case "${1}" in
 			{ neko_msg error "Failed to clean master directory!" && exit 1; }
 		;;
 	"uninstall")
+		do_prepare "${2}"
+		cd .. || exit 1
 		. common/steps/neko_do_uninstall
+		cd master || exit 1
+		[ ! -d "${wrksrc}" ] && for step in fetch extract
+			do
+				do_${step} "${2}"
+			done
+		cd "${wrksrc}" || exit 1
 		do_uninstall "${2}"
 		;;
 	*)

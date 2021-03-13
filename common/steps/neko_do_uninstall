@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Source as do_uninstall doesn't do_prepare
+. srcpkgs/"${2}"/template
+
 do_uninstall()
 {
 	case "${build_style}" in
@@ -11,3 +14,6 @@ do_uninstall()
 			;;
 	esac
 }
+
+# Allow for overrides in template
+. srcpkgs/"${2}"/template

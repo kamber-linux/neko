@@ -3,9 +3,9 @@
 do_prepare()
 {
 	# Check for permissions
-	user_id=$(echo $(id) | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
+	user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
 	[ "${user_id}" = 0 ] && perms="root" || perms="anon"
-	neko_msg normal "Preparing environment for building..."
+	neko_msg normal "Preparing environment ..."
 	[ ! -f srcpkgs/"${1}"/template ] && neko_msg error "No template for ${1}" && exit 1;
 	patches_dir="srcpkgs/"${1}"/patches"
 	. srcpkgs/"${1}"/template
