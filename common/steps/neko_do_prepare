@@ -2,11 +2,12 @@
 
 do_prepare()
 {
+	# Check for permissions
+	[ $(logname) = "root" ] && perms="root" || perms="anon"
 	neko_msg normal "Preparing environment for building..."
-	files="srcpkgs/${1}"
-	[ ! -d "${files}" ] && neko_msg error "No template for ${1}" && exit 1;
-	patches_dir="${files}/patches"
-	. "${files}"/template
+	[ ! -f srcpkgs/"${1}"/template ] && neko_msg error "No template for ${1}" && exit 1;
+	patches_dir="srcpkgs/"${1}"/patches"
+	. srcpkgs/"${1}"/template
 	archive=${pkgname}-${version}.tar.gz
 	if [ "${giturl}" ]
 	then
@@ -14,7 +15,8 @@ do_prepare()
 	else
 		wrksrc="${pkgname}-${version}"
 	fi
-	. "${files}"/template
+	# Source again to allow overrides
+	. srcpkgs/"${1}"/template
 	cd master || exit
 	[ -d "${wrksrc}" ] && rm -rf "${wrksrc}"
 }

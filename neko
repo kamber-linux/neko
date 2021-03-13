@@ -17,6 +17,7 @@ case "${1}" in
 	"em" | "emerge")
 		for step in prepare fetch check extract patch build install
 		do
+			[ "${perms}" = anon ] && neko_msg error "You must have root permissions to emerge packages" && exit 1;
 			do_${step} "${2}"
 		done
 		;;
