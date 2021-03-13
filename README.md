@@ -22,14 +22,13 @@ distfiles="https://dl.suckless.org/${pkgname}/${pkgname}-${version}.tar.gz"
 checksum=d42d3ceceb4d6a65e32e90a5336e3d446db612c3fbd9ebc1780bc6c9a03346a6
 build_style=makefile
 ```
-Git builds are also planned to be supported. Instead of specifying `distfiles`, just specify `giturl` and it should work the same.
+Git builds are also planned to be supported. Instead of specifying `distfiles`, just specify `giturl` and add "-git" to the package directory name and it should work the same.
 
 # Making patches (advice appreciated, I'm bad)
 To make a patch, go to the source folder and make two folders, `a` and `b`. Copy the file you want to edit into `a`, and copy that into `b`: `cp a/<file> b`. Edit `b/<file>` to the changes you want. Then, `diff -Naur a/<file> b/<file> > <patch_name>.patch`. Make a folder in `srcpkgs/<pkg>` called `patches`, and add the patch there.
 
 # TODO
 * Write a wget alternative in SHELL using BearSSL libraries (make more SSL library agnostic once done)
-* Handle root permissions more effectively (possible something like `logname`, which exists in most userspaces)
 * Add in more explicit pre and post steps to make it more fail safe
 * Add more build styles
 * Add more packages
