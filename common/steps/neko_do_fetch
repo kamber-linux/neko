@@ -10,7 +10,6 @@ do_fetch()
 			{ neko_msg error "Failed to fetch distfiles!" && exit 1; }
 	elif [ "${giturl}" ]
 	then
-		[ -d "${pkgname}" ] && rm -rf "${pkgname}"
 		neko_msg normal "Cloning git repo for ${1}..."
 		git clone "${giturl}" &&
 			neko_msg success "Successfully cloned git repo!" ||

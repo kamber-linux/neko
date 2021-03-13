@@ -4,6 +4,7 @@ do_prepare()
 {
 	neko_msg normal "Preparing environment for building..."
 	files="srcpkgs/${1}"
+	[ ! -d "${files}" ] && neko_msg error "No template for ${1}" && exit 1;
 	patches_dir="${files}/patches"
 	. "${files}"/template
 	archive=${pkgname}-${version}.tar.gz
@@ -15,4 +16,5 @@ do_prepare()
 	fi
 	. "${files}"/template
 	cd master || exit
+	[ -d "${wrksrc}" ] && rm -rf "${wrksrc}"
 }
