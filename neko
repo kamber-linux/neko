@@ -39,7 +39,7 @@ case "${1}" in
 		cd .. || exit 1
 		. common/steps/neko_do_uninstall
 		cd master || exit 1
-		[ ! -d "${wrksrc}" ] && neko_msg warning "No source found, re-downloading..." && for step in fetch extract build
+		[ ! -d "${wrksrc}" ] && neko_msg warning "No source found, re-downloading..." && for step in fetch extract patch build
 			do
 				do_${step} "${2}"
 			done || { cd "${wrksrc}" || exit 1; }
