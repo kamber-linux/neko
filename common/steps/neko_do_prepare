@@ -19,5 +19,4 @@ do_prepare()
 	# Source again to allow overrides
 	. srcpkgs/"${1}"/template
 	cd master || exit
-	[ -d "${wrksrc}" ] && rm -rf "${wrksrc}"
 }
