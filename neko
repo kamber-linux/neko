@@ -2,7 +2,7 @@
 
 # include files
 . common/neko_msg
-for file in prepare fetch check extract patch build install uninstall
+for file in prepare fetch check extract patch build install
 do
 	. common/steps/neko_do_${file}
 done
@@ -27,6 +27,7 @@ case "${1}" in
 			{ neko_msg error "Failed to clean master directory!" && exit 1; }
 		;;
 	"uninstall")
+		. common/steps/neko_do_uninstall
 		do_uninstall "${2}"
 		;;
 	*)
