@@ -7,6 +7,10 @@ do
 	. common/steps/neko_do_${file}
 done
 
+# Check for permissions
+user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
+[ "${user_id}" = 0 ] && perms="root" || perms="anon"
+
 case "${1}" in
 	"pkg")
 		do_prepare "${2}"
@@ -17,10 +21,10 @@ case "${1}" in
 		done
 		;;
 	"em" | "emerge")
+		[ "${perms}" = anon ] && neko_msg error "You must have root permissions to emerge packages" && exit 1;
 		. common/steps/neko_do_install
 		for step in prepare fetch check extract patch build install
 		do
-			[ "${perms}" = anon ] && neko_msg error "You must have root permissions to emerge packages" && exit 1;
 			do_${step} "${2}"
 		done
 		;;
@@ -38,8 +42,7 @@ case "${1}" in
 		[ ! -d "${wrksrc}" ] && neko_msg warning "No source found, re-downloading..." && for step in fetch extract build
 			do
 				do_${step} "${2}"
-			done
-		# cd "${wrksrc}" || exit 1
+			done || { cd "${wrksrc}" || exit 1; }
 		do_uninstall "${2}"
 		;;
 	*)
