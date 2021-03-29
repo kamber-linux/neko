@@ -1,0 +1,11 @@
+--- a/Build.sh	2021-03-29 12:53:20.769583385 -0600
++++ b/Build.sh	2021-03-29 12:54:07.893586348 -0600
+@@ -2816,7 +2816,7 @@
+ DEBUG				don’t use in production, wants gcc, implies:
+ DEBUG_LEAKS			enable freeing resources before exiting
+ KSH_VERSIONNAME_VENDOR_EXT	when patching; space+plus+word (e.g. " +SuSE")
+-MKSHRC_PATH			"~/.mkshrc" (do not change)
++MKSHRC_PATH			"~/.config/mksh/mkshrc" (do not change)
+ MKSH_A4PB			force use of arc4random_pushb
+ MKSH_ASSUME_UTF8		(0=disabled, 1=enabled; default: unset)
+ MKSH_BINSHPOSIX			if */sh or */-sh, enable set -o posix

@@ -1,0 +1,65 @@
+--- a/Build.sh	2021-03-29 12:53:20.769583385 -0600
++++ b/Build.sh	2021-03-29 12:57:19.583598402 -0600
+@@ -348,7 +348,7 @@
+ 	fi
+ 	vscan=
+ 	if test $phase = u; then
+-		test $ct = gcc && vscan='unrecogni[sz]ed'
++		test $ct = tcc && vscan='unrecogni[sz]ed'
+ 		test $ct = hpcc && vscan='unsupported'
+ 		test $ct = pcc && vscan='unsupported'
+ 		test $ct = sunpro && vscan='-e ignored -e turned.off'
+@@ -676,7 +676,7 @@
+ ;
+ EOF
+ 	ct=unknown
+-	vv ']' "${CC-cc} -E $CFLAGS $CPPFLAGS $NOWARN conftest.c | grep ct= | tr -d \\\\015 >x"
++	vv ']' "${CC-tcc} -E $CFLAGS $CPPFLAGS $NOWARN conftest.c | grep ct= | tr -d \\\\015 >x"
+ 	sed 's/^/[ /' x
+ 	eval `cat x`
+ 	rmf x vv.out
+@@ -723,7 +723,7 @@
+ 	;;
+ A/UX)
+ 	add_cppflags -D_POSIX_SOURCE
+-	: "${CC=gcc}"
++	: "${CC=tcc}"
+ 	: "${LIBS=-lposix}"
+ 	# GCC defines AUX but cc nothing
+ 	add_cppflags -D__A_UX__
+@@ -890,7 +890,7 @@
+ 	add_cppflags -D_NEXT_SOURCE
+ 	add_cppflags -D_POSIX_SOURCE
+ 	: "${AWK=gawk}"
+-	: "${CC=cc -posix}"
++	: "${CC=tcc -posix}"
+ 	add_cppflags -DMKSH_NO_SIGSETJMP
+ 	# NeXTstep cannot get a controlling tty
+ 	add_cppflags -DMKSH_UNEMPLOYED
+@@ -918,7 +918,7 @@
+ 	HAVE_TERMIOS_H=0
+ 	HAVE_MKNOD=0	# setmode() incompatible
+ 	check_categories="$check_categories nosymlink"
+-	: "${CC=gcc}"
++	: "${CC=tcc}"
+ 	: "${SIZE=: size}"
+ 	SRCS="$SRCS os2.c"
+ 	add_cppflags -DMKSH_UNEMPLOYED
+@@ -1026,7 +1026,7 @@
+ 	oswarn=' and will currently not work'
+ 	;;
+ ULTRIX)
+-	: "${CC=cc -YPOSIX}"
++	: "${CC=tcc -YPOSIX}"
+ 	add_cppflags -DMKSH_TYPEDEF_SSIZE_T=int
+ 	: "${HAVE_SETLOCALE_CTYPE=0}"
+ 	;;
+@@ -1056,7 +1056,7 @@
+ 
+ : "${HAVE_MKNOD=0}"
+ 
+-: "${AWK=awk}${CC=cc}${NROFF=nroff}${SIZE=size}"
++: "${AWK=awk}${CC=tcc}${NROFF=nroff}${SIZE=size}"
+ test 0 = $r && echo | $NROFF -v 2>&1 | grep GNU >/dev/null 2>&1 && \
+     echo | $NROFF -c >/dev/null 2>&1 && NROFF="$NROFF -c"
+ 
