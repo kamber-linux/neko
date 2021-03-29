@@ -5,6 +5,9 @@
 # some variables are sourced from the specified template
 # shellcheck disable=SC2154
 
+# .gitignore file doesn't push master directory
+[ ! -d master ] && mkdir -p master
+
 # Check for permissions
 user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
 [ "${user_id}" = 0 ] && perms="root" || perms="anon"
