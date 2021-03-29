@@ -67,6 +67,23 @@ neko_fetch()
 	fi
 }
 
+neko_check()
+{
+	if [ "${distfiles}" ]
+	then
+		neko_msg normal "Verifying SHA-256 checksum of distfiles for ${1}..."
+		distfiles_checksum=$(sha256sum "${archive}" | cut -d' ' -f1)
+		neko_msg normal "Checksum of distfiles: ${distfiles_checksum}"
+		neko_msg normal "Checksum in template:  ${checksum}"
+		if [ "${checksum}" = "${distfiles_checksum}" ]
+		then
+			neko_msg success "Checksums match"
+		else
+			neko_msg error "Checksum mismatch - aborting" && exit
+		fi
+	fi
+}
+
 neko_extract()
 {
 	neko_msg normal "Extracting distfiles for ${1}..."
@@ -164,7 +181,7 @@ neko_install()
 
 case "${1}" in
 	"pkg")
-		for step in prepare fetch extract patch build
+		for step in prepare fetch check extract patch build
 		do
 			neko_"${step}" "${2}"
 		done
