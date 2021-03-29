@@ -4,3 +4,9 @@ distfiles="https://github.com/n-ivkovic/${pkgname}/archive/v${version}.tar.gz"
 checksum=19361399a870c017d6100e5945e82e64eb20928607f785dcff00e57e5efb3150
 archive=v${version}.tar.gz
 build_style=makefile
+
+# tspreed doesn't need to build
+neko_build()
+{
+	:
+}

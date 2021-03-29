@@ -4,7 +4,7 @@ distfiles="https://bearssl.org/${pkgname}-${version}.tar.gz"
 checksum=6705bba1714961b41a728dfc5debbe348d2966c117649392f8c8139efc83ff14
 build_style=makefile
 
-do_install()
+neko_install()
 {
 	mkdir -p ${DESTDIR}/usr/local/bin
 	cp -r build/brssl ${DESTDIR}/usr/local/bin
@@ -20,7 +20,7 @@ do_install()
 	cp -r inc/* ${DESTDIR}/usr/local/include
 }
 
-do_uninstall()
+neko_uninstall()
 {
 	rm -rf ${DESTDIR}/usr/local/bin/brssl
 	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.so

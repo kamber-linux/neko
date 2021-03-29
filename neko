@@ -1,51 +1,224 @@
 #!/bin/sh
 
-# include files
-. common/neko_msg
-for file in prepare fetch check extract patch build
-do
-	. common/steps/neko_do_${file}
-done
+# neko sources files depending on arguments
+# shellcheck source=/dev/null
+# some variables are sourced from the specified template
+# shellcheck disable=SC2154
+
+# .gitignore file doesn't push master directory
+[ ! -d master ] && mkdir -p master
 
 # Check for permissions
 user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
 [ "${user_id}" = 0 ] && perms="root" || perms="anon"
 
+neko_msg()
+{
+	case "${1}" in
+		"normal") echo "\033[1m=> \033[36mneko:\033[0m ${2}" ;;
+		"success") echo "\033[1m=> \033[32mneko:\033[0m ${2}" ;;
+		"warning") echo "\033[1m=> \033[33mneko:\033[0m ${2}" ;;
+		"error") echo "\033[1m=> \033[31mneko:\033[0m ${2}" ;;
+	esac
+}
+
+neko_prepare()
+{
+	[ ! -f srcpkgs/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
+	neko_msg normal "Preparing environment..."
+	. srcpkgs/"${1}"/template
+	patches_dir=srcpkgs/"${1}"/patches
+	if [ "${distfiles}" ]
+	then
+		wrksrc="${pkgname}-${version}"
+	elif [ "${giturl}" ]
+	then
+		wrksrc="${pkgname}"
+	fi
+	archive="${pkgname}-${version}.tar.gz"
+	# Allow override of wrksrc and archive
+	. srcpkgs/"${1}"/template
+	[ -d master/"${wrksrc}" ] && rm -rf master/"${wrksrc}"
+	cd master || exit
+}
+
+neko_fetch()
+{
+	neko_msg normal "Downloading source for ${1}..."
+	if [ "${distfiles}" ]
+	then
+		if
+			wget "${distfiles}"
+		then
+			neko_msg success "Successfully fetched distfiles for ${1}"
+		else
+			neko_msg error "Failed to fetch distfiles for ${1}"
+		fi
+	elif [ "${giturl}" ]
+	then
+		if
+			git clone "${giturl}"
+		then
+			neko_msg success "Successfully cloned git repo for ${1}"
+		else
+			neko_msg error "Failed to clone git repo for ${1}"
+		fi
+	else
+		neko_msg error "No distfiles or giturl specified"
+	fi
+}
+
+neko_check()
+{
+	if [ "${distfiles}" ]
+	then
+		neko_msg normal "Verifying SHA-256 checksum of distfiles for ${1}..."
+		distfiles_checksum=$(sha256sum "${archive}" | cut -d' ' -f1)
+		neko_msg normal "Checksum of distfiles: ${distfiles_checksum}"
+		neko_msg normal "Checksum in template:  ${checksum}"
+		if [ "${checksum}" = "${distfiles_checksum}" ]
+		then
+			neko_msg success "Checksums match"
+		else
+			neko_msg error "Checksum mismatch - aborting" && exit
+		fi
+	fi
+}
+
+neko_extract()
+{
+	neko_msg normal "Extracting distfiles for ${1}..."
+	[ "${distfiles}" ] && tar zxvf "${archive}"
+	cd "${wrksrc}" || exit
+}
+
+neko_patch()
+{
+	if [ -d ../../"${patches_dir}" ]
+	then
+		neko_msg normal "Applying patches for ${1}..."
+		if
+			for patch in ../../"${patches_dir}"/*.patch
+			do
+				neko_msg normal "Applying patch ${patch##*/}..."
+				patch -Np1 < "${patch}"
+			done
+		then
+			neko_msg success "Successfully applied patches to ${1}"
+		else
+			neko_msg error "Failed to apply one or more patches to ${1}"
+		fi
+	fi
+}
+
+neko_build()
+{
+	# Try and use TCC by default
+	if [ "${TCC}" = "false" ]
+	then
+		export CC=cc
+	else
+		export CC=tcc
+	fi
+	neko_msg normal "Building ${1}..."
+	case "${build_style}" in
+		"makefile")
+			make
+			;;
+		"configure")
+			./configure
+			make
+			;;
+		"meson")
+			export CC=cc # meson can't build with tcc compiler
+			meson build
+			ninja -C build
+	esac
+}
+
+neko_install()
+{
+	neko_msg normal "Installing ${1}..."
+	case "${build_style}" in
+		"makefile")
+			make install
+			;;
+		"configure")
+			make install
+			;;
+		"meson")
+			ninja -C build install
+			;;
+	esac
+}
+
+neko_uninstall()
+{
+	case "${build_style}" in
+		"makefile")
+			make uninstall
+			;;
+	esac
+}
+
 case "${1}" in
 	"pkg")
-		do_prepare "${2}"
-		[ -d "${wrksrc}" ] && rm -rf "${wrksrc}"
-		for step in fetch check extract patch build
+		for step in prepare fetch check extract patch
 		do
-			do_${step} "${2}"
+			neko_"${step}" "${2}"
 		done
-		;;
-	"em" | "emerge")
-		[ "${perms}" = anon ] && neko_msg error "You must have root permissions to emerge packages" && exit 1;
-		. common/steps/neko_do_install
-		for step in prepare fetch check extract patch build install
-		do
-			do_${step} "${2}"
-		done
+		if
+			neko_build "${2}"
+		then
+			neko_msg success "Successfully built ${2}"
+		else
+			neko_msg error "Failed to build ${2}" && exit
+		fi
 		;;
 	"clean")
-		neko_msg normal "Cleaning master directory..."
-		rm -rf master/* &&
-			neko_msg success "Successfully cleaned master directory!" ||
-			{ neko_msg error "Failed to clean master directory!" && exit 1; }
+		neko_msg normal "Cleaning source directory..."
+		if
+			rm -rf master/*
+		then
+			neko_msg success "Successfully cleaned master directory"
+		else
+			neko_msg error "Failed to clean master directory"
+		fi
+		;;
+	"em" | "emerge")
+		[ "${perms}" = "anon" ] && neko_msg error "You must have root permissions to run this command" && exit
+		for step in prepare fetch check extract patch
+		do
+			neko_"${step}" "${2}"
+		done
+		if
+			neko_build "${2}"
+		then
+			neko_msg success "Successfully built ${2}"
+		else
+			neko_msg error "Failed to build ${2}" && exit
+		fi
+		if
+			neko_install "${2}"
+		then
+			neko_msg success "Successfully installed ${2}"
+		else
+			neko_msg error "Failed to install ${2}" && exit
+		fi
 		;;
 	"uninstall")
-		do_prepare "${2}"
-		cd .. || exit 1
-		. common/steps/neko_do_uninstall
-		cd master || exit 1
-		[ ! -d "${wrksrc}" ] && neko_msg warning "No source found, re-downloading..." && for step in fetch extract patch build
-			do
-				do_${step} "${2}"
-			done || { cd "${wrksrc}" || exit 1; }
-		do_uninstall "${2}"
+		for step in prepare fetch check extract patch
+		do
+			neko_"${step}" "${2}"
+		done
+		if
+			neko_uninstall "${2}"
+		then
+			neko_msg success "Successfully uninstalled ${2}"
+		else
+			neko_msg error "Failed to uninstall ${2}" && exit
+		fi
 		;;
 	*)
-		neko_msg error "Unknown option \"${1}\"" && exit 1
-		;;
+		neko_msg error "Unknown option ${1}"
 esac
