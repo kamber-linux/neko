@@ -1,0 +1,18 @@
+pkgname=mksh
+version=R59c
+distfiles="http://www.mirbsd.org/MirOS/dist/mir/${pkgname}/${pkgname}-${version}.tgz"
+checksum=77ae1665a337f1c48c61d6b961db3e52119b38e58884d1c89684af31f87bc506
+archive="${pkgname}"-"${version}".tgz
+wrksrc="${pkgname}"
+
+neko_build()
+{
+	if
+		chmod +x ./Build.sh
+		./Build.sh -r
+	then
+		neko_msg success "Successfully built ${1}"
+	else
+		neko_msg error "Failed to build ${1}"
+	fi
+}

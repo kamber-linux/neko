@@ -35,7 +35,8 @@ neko_prepare()
 	then
 		wrksrc="${pkgname}"
 	fi
-	# Allow override of wrksrc
+	archive="${pkgname}-${version}.tar.gz"
+	# Allow override of wrksrc and archive
 	. srcpkgs/"${1}"/template
 	[ -d master/"${wrksrc}" ] && rm -rf master/"${wrksrc}"
 	cd master || exit
@@ -112,6 +113,13 @@ neko_patch()
 
 neko_build()
 {
+	# Try and use TCC by default
+	if [ "${TCC}" = "false" ]
+	then
+		export CC=cc
+	else
+		export CC=tcc
+	fi
 	neko_msg normal "Building ${1}..."
 	case "${build_style}" in
 		"makefile")
@@ -134,6 +142,7 @@ neko_build()
 			fi
 			;;
 		"meson")
+			export CC=cc # meson can't build with tcc compiler
 			if
 				meson build
 				ninja -C build
