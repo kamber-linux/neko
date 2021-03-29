@@ -149,6 +149,16 @@ neko_install()
 			else
 				neko_msg error "Failed to install ${1}"
 			fi
+			;;
+		"meson")
+			if
+				ninja -C build install
+			then
+				neko_msg success "Successfully installed ${1}"
+			else
+				neko_msg error "Failed to install ${1}"
+			fi
+			;;
 	esac
 }
 
