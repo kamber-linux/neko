@@ -29,6 +29,6 @@ To make a patch, go to the source folder and make two folders, `a` and `b`. Copy
 
 # TODO
 * Write a wget alternative in SHELL using BearSSL libraries (make more SSL library agnostic once done)
-* Add in more explicit pre and post steps to make it more fail safe
+* Rewrite documentation
 * Add more build styles
 * Add more packages
