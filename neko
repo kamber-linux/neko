@@ -70,7 +70,7 @@ neko_fetch()
 neko_extract()
 {
 	neko_msg normal "Extracting distfiles for ${1}..."
-	[ "${distfiles}" ] && tar zxvf "${pkgname}"-"${version}".tar.gz
+	[ "${distfiles}" ] && tar zxvf "${archive}"
 	cd "${wrksrc}" || exit
 }
 
@@ -116,6 +116,15 @@ neko_build()
 				neko_msg error "Failed to build ${1}"
 			fi
 			;;
+		"meson")
+			if
+				meson build
+				ninja -C build
+			then
+				neko_msg success "Successfully built ${1}"
+			else
+				neko_msg error "Failed to build ${1}"
+			fi
 	esac
 }
 

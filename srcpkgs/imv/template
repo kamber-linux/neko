@@ -1,0 +1,5 @@
+pkgname=imv
+version=4.2.0
+distfiles="https://github.com/eXeC64/${pkgname}/archive/refs/tags/v${version}.tar.gz"
+archive=v${version}.tar.gz
+build_style=meson
