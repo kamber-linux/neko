@@ -198,9 +198,9 @@ case "${1}" in
 		;;
 	"em" | "emerge")
 		[ "${perms}" = "anon" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch extract patch build install
+		for step in prepare fetch check extract patch build install
 		do
-			neko-"${step}" "${2}"
+			neko_"${step}" "${2}"
 		done
 		;;
 	*)
