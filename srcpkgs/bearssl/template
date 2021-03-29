@@ -6,35 +6,23 @@ build_style=makefile
 
 neko_install()
 {
-	if
-		mkdir -p ${DESTDIR}/usr/local/bin
-		cp -r build/brssl ${DESTDIR}/usr/local/bin
-		chmod 755 ${DESTIR}/usr/local/bin/brssl
+	mkdir -p ${DESTDIR}/usr/local/bin
+	cp -r build/brssl ${DESTDIR}/usr/local/bin
+	chmod 755 ${DESTIR}/usr/local/bin/brssl
 
-		mkdir -p ${DESTDIR}/usr/local/lib
-		cp -r build/lib${pkgname}.so ${DESTDIR}/usr/local/lib
-		chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.so
-		cp -r build/lib${pkgname}.a ${DESTDIR}/usr/local/lib
-		chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.a
+	mkdir -p ${DESTDIR}/usr/local/lib
+	cp -r build/lib${pkgname}.so ${DESTDIR}/usr/local/lib
+	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.so
+	cp -r build/lib${pkgname}.a ${DESTDIR}/usr/local/lib
+	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.a
 
-		mkdir -p ${DESTDIR}/usr/local/include
-		cp -r inc/* ${DESTDIR}/usr/local/include
-	then
-		neko_msg success "Successfully installed ${1}"
-	else
-		neko_msg error "Failed to install ${1}"
-	fi
+	mkdir -p ${DESTDIR}/usr/local/include
+	cp -r inc/* ${DESTDIR}/usr/local/include
 }
 
 neko_uninstall()
 {
-	if
-		rm -rf ${DESTDIR}/usr/local/bin/brssl
-		rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.so
-		rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.a
-	then
-		neko_msg success "Successfully uninstalled ${1}"
-	else
-		neko_msg error "Failed to uninstall ${1}"
-	fi
+	rm -rf ${DESTDIR}/usr/local/bin/brssl
+	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.so
+	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.a
 }

@@ -123,34 +123,16 @@ neko_build()
 	neko_msg normal "Building ${1}..."
 	case "${build_style}" in
 		"makefile")
-			if
-				make
-			then
-				neko_msg success "Successfully built ${1}"
-			else
-				neko_msg error "Failed to build ${1}"
-			fi
+			make
 			;;
 		"configure")
-			if
-				./configure
-				make
-			then
-				neko_msg success "Successfully built ${1}"
-			else
-				neko_msg error "Failed to build ${1}"
-			fi
+			./configure
+			make
 			;;
 		"meson")
 			export CC=cc # meson can't build with tcc compiler
-			if
-				meson build
-				ninja -C build
-			then
-				neko_msg success "Successfully built ${1}"
-			else
-				neko_msg error "Failed to build ${1}"
-			fi
+			meson build
+			ninja -C build
 	esac
 }
 
@@ -159,31 +141,13 @@ neko_install()
 	neko_msg normal "Installing ${1}..."
 	case "${build_style}" in
 		"makefile")
-			if
-				make install
-			then
-				neko_msg success "Successfully installed ${1}"
-			else
-				neko_msg error "Failed to install ${1}"
-			fi
+			make install
 			;;
 		"configure")
-			if
-				make install
-			then
-				neko_msg success "Successfully installed ${1}"
-			else
-				neko_msg error "Failed to install ${1}"
-			fi
+			make install
 			;;
 		"meson")
-			if
-				ninja -C build install
-			then
-				neko_msg success "Successfully installed ${1}"
-			else
-				neko_msg error "Failed to install ${1}"
-			fi
+			ninja -C build install
 			;;
 	esac
 }
@@ -192,23 +156,24 @@ neko_uninstall()
 {
 	case "${build_style}" in
 		"makefile")
-			if
-				make uninstall
-			then
-				neko_msg success "Successfully uninstalled ${1}"
-			else
-				neko_msg error "Failed to uninstall ${1}"
-			fi
+			make uninstall
 			;;
 	esac
 }
 
 case "${1}" in
 	"pkg")
-		for step in prepare fetch check extract patch build
+		for step in prepare fetch check extract patch
 		do
 			neko_"${step}" "${2}"
 		done
+		if
+			neko_build "${2}"
+		then
+			neko_msg success "Successfully built ${2}"
+		else
+			neko_msg error "Failed to build ${2}" && exit
+		fi
 		;;
 	"clean")
 		neko_msg normal "Cleaning source directory..."
@@ -222,16 +187,37 @@ case "${1}" in
 		;;
 	"em" | "emerge")
 		[ "${perms}" = "anon" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch check extract patch build install
+		for step in prepare fetch check extract patch
 		do
 			neko_"${step}" "${2}"
 		done
+		if
+			neko_build "${2}"
+		then
+			neko_msg success "Successfully built ${2}"
+		else
+			neko_msg error "Failed to build ${2}" && exit
+		fi
+		if
+			neko_install "${2}"
+		then
+			neko_msg success "Successfully installed ${2}"
+		else
+			neko_msg error "Failed to install ${2}" && exit
+		fi
 		;;
 	"uninstall")
-		for step in prepare fetch check extract patch uninstall
+		for step in prepare fetch check extract patch
 		do
 			neko_"${step}" "${2}"
 		done
+		if
+			neko_uninstall "${2}"
+		then
+			neko_msg success "Successfully uninstalled ${2}"
+		else
+			neko_msg error "Failed to uninstall ${2}" && exit
+		fi
 		;;
 	*)
 		neko_msg error "Unknown option ${1}"
