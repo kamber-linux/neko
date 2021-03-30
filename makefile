@@ -1,9 +1,12 @@
 .POSIX:
 
-include config.mk
-
 # Mainly for non-GNU make
 SHELL = /bin/sh
+
+# Installation paths
+PREFIX    = /usr/local
+BINPREFIX = ${PREFIX}/bin
+MANPREFIX = ${PREFIX}/share/man/man1
 
 BINDIR = ${DESTDIR}${BINPREFIX}
 MANDIR = ${DESTDIR}${MANPREFIX}
