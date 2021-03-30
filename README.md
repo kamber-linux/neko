@@ -82,9 +82,11 @@ For contributing to the shell script, shellcheck is used to ensure portability. 
 **PACKAGES MUST:**
 * Be able to be built against musl libc libraries
 * Be able to be built against bearssl libraries
+
 I strongly push for packages to:
 * Adhere to XDG specifications (e.g. not filling up your `$HOME` folder)
 * Try and be compiled with TCC (if possible) to save time on compiling
+
 As for how to contribute, it's similar to VOID.
 I love the way VOID handles pull requests for new packages, so we'll follow. When pull requesting for packages, request to merge with the master branch.
 ### New packages
