@@ -93,6 +93,8 @@ I love the way VOID handles pull requests for new packages, so we'll follow. Whe
 For a new package, there should only be one commit per package with the commit message: `New package: <pkgname>-<version>`. If you're requesting a git build, please attach `-git` to the end of the package name (`srcpkgs/<pkgname>-git/template` will have `pkgname=<pkgname>-git`) with the commit message: `New package: <pkgname>-git`.
 ### Updating packages
 For updating a package, please have the commit message be: `<pkgname>: update to <version>`.
+### Patches
+This is how I would recommend doing patches. Make two directories, `a` and `b`, then copy the file / files you want to patch to both. Edit the file / files in `b`. Then, `diff -Naur a/<file> b/<file> > <patch-name>.patch`. Then make a directory in `srcpkgs/<pkgname>` called `patches` and put it in there.
 # TODO
 * Add a license variable to the template to handle licenses of packages
 * Add a `depends` variable to have templates be able to pull other dependency packages
