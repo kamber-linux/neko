@@ -9,9 +9,7 @@ base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
 pkgs_dir="${base_dir}"/srcpkgs
 master_dir="${base_dir}"/master
 
-# Check for permissions
-user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
-[ "${user_id}" = 0 ] && perms="root" || perms="anon"
+[ "$(id -u)" = "0" ] && perms="root" || perms="anon"
 
 neko_msg()
 {
