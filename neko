@@ -5,8 +5,9 @@
 # some variables are sourced from the specified template
 # shellcheck disable=SC2154
 
-# .gitignore file doesn't push master directory
-[ ! -d master ] && mkdir -p master
+base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
+pkgs_dir="${base_dir}"/srcpkgs
+master_dir="${base_dir}"/master
 
 # Check for permissions
 user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
@@ -22,24 +23,61 @@ neko_msg()
 	esac
 }
 
+neko_init()
+{
+	for dir in "${base_dir}" "${pkgs_dir}" "${master_dir}"
+	do
+		[ ! -d "${dir}" ] && neko_msg normal "Making dir ${dir}..." && if
+		mkdir -p "${dir}"
+	then
+		neko_msg success "Successfully made dir ${dir}"
+	else
+		neko_msg error "Failed to make dir ${dir}" && exit
+		fi
+	done
+	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
+	if
+		cp -r srcpkgs "${base_dir}"
+	then
+		neko_msg success "Successfully copied base srcpkgs to ${base_dir}"
+	else
+		neko_msg error "Failed to copy base srcpkgs to ${base_dir}"
+	fi
+}
+
+neko_zap()
+{
+	neko_msg normal "Zapping neko directory ${base_dir}..."
+	if
+		rm -rf "${base_dir:?}"/*
+	then
+		neko_msg success "Successfully zapped neko directory"
+	else
+		neko_msg error "Failed to zap neko directory" && exit
+	fi
+
+}
+
 neko_prepare()
 {
-	[ ! -f srcpkgs/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
+	[ ! -d "${pkgs_dir}" ] && neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${master_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -f "${pkgs_dir}"/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
 	neko_msg normal "Preparing environment..."
-	. srcpkgs/"${1}"/template
-	patches_dir=srcpkgs/"${1}"/patches
+	. "${pkgs_dir}"/"${1}"/template
+	patches_dir="${pkgs_dir}"/"${1}"/patches
 	if [ "${distfiles}" ]
 	then
-		wrksrc="${pkgname}-${version}"
+		wrksrc="${pkgname}"-"${version}"
 	elif [ "${giturl}" ]
 	then
 		wrksrc="${pkgname}"
 	fi
-	archive="${pkgname}-${version}.tar.gz"
+	archive="${pkgname}"-"${version}".tar.gz
 	# Allow override of wrksrc and archive
-	. srcpkgs/"${1}"/template
-	[ -d master/"${wrksrc}" ] && rm -rf master/"${wrksrc}"
-	cd master || exit
+	. "${pkgs_dir}"/"${1}"/template
+	[ -d "${master_dir}"/"${wrksrc}" ] && rm -rf master/"${wrksrc}"
+	cd "${master_dir}" || exit
 }
 
 neko_fetch()
@@ -52,7 +90,7 @@ neko_fetch()
 		then
 			neko_msg success "Successfully fetched distfiles for ${1}"
 		else
-			neko_msg error "Failed to fetch distfiles for ${1}"
+			neko_msg error "Failed to fetch distfiles for ${1}" && exit
 		fi
 	elif [ "${giturl}" ]
 	then
@@ -61,7 +99,7 @@ neko_fetch()
 		then
 			neko_msg success "Successfully cloned git repo for ${1}"
 		else
-			neko_msg error "Failed to clone git repo for ${1}"
+			neko_msg error "Failed to clone git repo for ${1}" && exit
 		fi
 	else
 		neko_msg error "No distfiles or giturl specified"
@@ -94,11 +132,11 @@ neko_extract()
 
 neko_patch()
 {
-	if [ -d ../../"${patches_dir}" ]
+	if [ -d "${patches_dir}" ]
 	then
 		neko_msg normal "Applying patches for ${1}..."
 		if
-			for patch in ../../"${patches_dir}"/*.patch
+			for patch in "${patches_dir}"/*.patch
 			do
 				neko_msg normal "Applying patch ${patch##*/}..."
 				patch -Np1 < "${patch}"
@@ -106,7 +144,7 @@ neko_patch()
 		then
 			neko_msg success "Successfully applied patches to ${1}"
 		else
-			neko_msg error "Failed to apply one or more patches to ${1}"
+			neko_msg error "Failed to apply one or more patches to ${1}" && exit
 		fi
 	fi
 }
@@ -162,6 +200,12 @@ neko_uninstall()
 }
 
 case "${1}" in
+	"init")
+		neko_init
+		;;
+	"zap")
+		neko_zap
+		;;
 	"pkg")
 		for step in prepare fetch check extract patch
 		do
@@ -178,11 +222,11 @@ case "${1}" in
 	"clean")
 		neko_msg normal "Cleaning source directory..."
 		if
-			rm -rf master/*
+			rm -rf "${master_dir:?}"/*
 		then
 			neko_msg success "Successfully cleaned master directory"
 		else
-			neko_msg error "Failed to clean master directory"
+			neko_msg error "Failed to clean master directory" && exit
 		fi
 		;;
 	"em" | "emerge")
