@@ -21,6 +21,45 @@ neko_msg()
 	esac
 }
 
+neko_pkg()
+{
+	case "${1}" in
+		"bin")
+			mkdir -p "${DESTDIR}"/usr/local/bin
+			cp -r "${2}" "${DESTDIR}"/usr/local/bin
+			chmod 755 "${DESTDIR}"/usr/local/bin/"${2}"
+			;;
+		"man")
+			mkdir -p "${DESTDIR}"/usr/local/share/man/man"${3:-1}"
+			cp -r "${2}" "${DESTDIR}"/usr/local/share/man/man"${3:-1}"
+			chmod 644 "${DESTDIR}"/usr/local/share/man/man"${3:-1}"/"${2}"
+			;;
+		"lib")
+			mkdir -p "${DESTDIR}"/usr/local/lib
+			cp -r "${2}" "${DESTDIR}"/usr/local/lib
+			chmod 644 "${DESTDIR}"/usr/local/lib/"${2}"
+			;;
+		"inc")
+			mkdir -p "${DESTDIR}"/usr/local/include
+			cp -r "${2}" "${DESTDIR}"/usr/local/include
+			chmod 644 "${DESTDIR}"/usr/local/include/"${2}"
+			;;
+		"conf")
+			mkdir -p "${DESTDIR}"/etc"${3}"
+			cp -r "${2}" "${DESTDIR}"/etc"${3}"
+			chmod 644 "${DESTDIR}"/etc"${3}"/"${2}"
+			;;
+		"install")
+			mkdir -p "${DESTDIR}"/usr/local"${4}"
+			cp -r "${3}" "${DESTDIR}"/usr/local"${4}"
+			chmod "${2}" "${DESTDIR}"/usr/local"${4}"/"${3}"
+			;;
+		"uninstall")
+			rm -rf "${DESTDIR}"/usr/local"${2}"
+			;;
+	esac
+}
+
 neko_init()
 {
 	for dir in "${base_dir}" "${pkgs_dir}" "${master_dir}"
@@ -159,11 +198,11 @@ neko_build()
 	neko_msg normal "Building ${1}..."
 	case "${build_style}" in
 		"makefile")
-			make
+			[ "${make_args}" ] && make "${make_args}" || make
 			;;
 		"configure")
-			./configure
-			make
+			[ "${configure_args}" ] && ./configure "${configure_args}" || ./configure
+			[ "${make_args}" ] && make "${make_args}" || make
 			;;
 		"meson")
 			export CC=cc # meson can't build with tcc compiler

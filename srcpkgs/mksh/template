@@ -1,12 +1,26 @@
 pkgname=mksh
 version=R59c
-distfiles="http://www.mirbsd.org/MirOS/dist/mir/${pkgname}/${pkgname}-${version}.tgz"
+distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
 checksum=77ae1665a337f1c48c61d6b961db3e52119b38e58884d1c89684af31f87bc506
-archive="${pkgname}"-"${version}".tgz
-wrksrc="${pkgname}"
+archive=mksh-"${version}".tgz
+wrksrc=mksh
 
 neko_build()
 {
 	chmod +x ./Build.sh
 	./Build.sh -r
+}
+
+neko_install()
+{
+	neko_pkg bin mksh
+	neko_pkg man mksh.1
+	neko_pkg conf dot.mkshrc /skel/.mkshrc
+}
+
+neko_uninstall()
+{
+	neko_pkg uninstall /bin/mksh
+	neko_pkg uninstall /share/man/man1/mksh.1
+	neko_pkg uninstall /etc/skel/.mkshrc
 }
