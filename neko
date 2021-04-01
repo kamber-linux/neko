@@ -55,7 +55,7 @@ neko_pkg()
 			chmod "${2}" "${DESTDIR}"/usr/local"${4}"/"${3}"
 			;;
 		"uninstall")
-			rm -rf "${DESTDIR}"/usr/local"${2}"
+			rm -rf "${DESTDIR:?}"/usr/local"${2}"
 			;;
 	esac
 }
@@ -102,6 +102,15 @@ neko_prepare()
 	[ ! -f "${pkgs_dir}"/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
 	neko_msg normal "Preparing environment..."
 	. "${pkgs_dir}"/"${1}"/template
+	# Check for dependencies
+	if [ "${deps}" ]
+	then
+		for pkg_dep in ${deps}
+		do
+			# neko_msg normal "${pkg_dep}"
+			./neko pkg "${pkg_dep}"
+		done
+	fi
 	patches_dir="${pkgs_dir}"/"${1}"/patches
 	if [ "${distfiles}" ]
 	then
@@ -198,11 +207,26 @@ neko_build()
 	neko_msg normal "Building ${1}..."
 	case "${build_style}" in
 		"makefile")
-			[ "${make_args}" ] && make "${make_args}" || make
+			if [ "${make_args}" ]
+			then
+				make "${make_args}"
+			else
+				make
+			fi
 			;;
 		"configure")
-			[ "${configure_args}" ] && ./configure "${configure_args}" || ./configure
-			[ "${make_args}" ] && make "${make_args}" || make
+			if [ "${configure_args}" ]
+			then
+				./configure "${configure_args}"
+			else
+				./configure
+			fi
+			if [ "${make_args}" ]
+			then
+				make "${make_args}"
+			else
+				make
+			fi
 			;;
 		"meson")
 			export CC=cc # meson can't build with tcc compiler
@@ -268,17 +292,7 @@ case "${1}" in
 		;;
 	"em" | "emerge")
 		[ "${perms}" = "anon" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch check extract patch
-		do
-			neko_"${step}" "${2}"
-		done
-		if
-			neko_build "${2}"
-		then
-			neko_msg success "Successfully built ${2}"
-		else
-			neko_msg error "Failed to build ${2}" && exit
-		fi
+		./neko pkg "${2}"
 		if
 			neko_install "${2}"
 		then

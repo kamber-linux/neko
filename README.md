@@ -93,6 +93,5 @@ For a new package, there should only be one commit per package with the commit m
 For updating a package, please have the commit message be: `<pkgname>: update to <version>`.
 # TODO
 * Add a license variable to the template to handle licenses of packages
-* Add a `depends` variable to have templates be able to pull other dependency packages
 * Add more build styles / packages
 * Find a POSIX way to replace the `wget` solution for `neko_fetch`
