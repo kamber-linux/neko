@@ -1,0 +1,34 @@
+--- a/Makefile	2021-04-02 09:55:01.264874784 -0600
++++ b/Makefile	2021-04-02 09:56:29.925880359 -0600
+@@ -34,17 +34,13 @@
+ 	killall5.c          \
+ 	lsmod.c             \
+ 	lsusb.c             \
+-	mknod.c             \
+ 	mkswap.c            \
+ 	mount.c             \
+-	mountpoint.c        \
+ 	pagesize.c          \
+ 	pidof.c             \
+ 	pivot_root.c        \
+-	ps.c                \
+ 	respawn.c           \
+ 	rmmod.c             \
+-	stat.c              \
+ 	su.c                \
+ 	swapoff.c           \
+ 	swapon.c            \
+@@ -66,13 +62,9 @@
+ 	fallocate.1         \
+ 	free.1              \
+ 	id.1                \
+-	mknod.1             \
+-	mountpoint.1        \
+ 	pagesize.1          \
+ 	pidof.1             \
+-	ps.1                \
+ 	respawn.1           \
+-	stat.1              \
+ 	su.1                \
+ 	truncate.1          \
+ 	unshare.1           \

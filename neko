@@ -131,12 +131,8 @@ neko_prepare()
 	archive="${distfiles##*/}"
 	# Allow override of wrksrc and archive
 	. "${pkgs_dir}"/"${1}"/template
-	[ -d "${master_dir}"/"${wrksrc}" ] && if [ "${build_style}" = "meta" ]
-	then
-		return
-	else
-			rm -rf "${master_dir:?}"/"${wrksrc:?}"
-	fi
+	# Remove duplicate git repo
+	[ -d "${master_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${master_dir:?}"/"${wrksrc:?}"
 	cd "${master_dir}" || exit
 }
 
@@ -262,7 +258,7 @@ neko_install()
 
 neko_license()
 {
-	for pkg_license in "${license}"
+	for pkg_license in ${license}
 	do
 		case "${pkg_license}" in
 			"MIT" | "custom")
@@ -352,11 +348,13 @@ case "${1}" in
 		neko_msg normal "Making a base template for ${2}..."
 		if
 			mkdir -p "${pkgs_dir}"/"${2}"
-			echo "pkgname=\"foo\"" >> "${pkgs_dir}"/"${2}"/template
-			echo "version=\"1.0\"" >> "${pkgs_dir}"/"${2}"/template
-			echo "distfiles=\"url.to/source-\${version}.tar.gz\"" >> "${pkgs_dir}"/"${2}"/template
-			echo "build_style=\"makefile\"" >> "${pkgs_dir}"/"${2}"/template
-			echo "license=\"GPL-3.0-or-later\"" >> "${pkgs_dir}"/"${2}"/template
+			{
+			echo "pkgname=\"${2}\""
+			echo "version=\"1.0\""
+			echo "distfiles=\"url.to/source-\${version}.tar.gz\""
+			echo "build_style=\"makefile\""
+			echo "license=\"GPL-3.0-or-later\""
+			} >> "${pkgs_dir}"/"${2}"/template
 		then
 			neko_msg success "Made a template for ${2} in ${pkgs_dir}/${2}"
 		else
