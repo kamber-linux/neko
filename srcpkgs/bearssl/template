@@ -23,6 +23,6 @@ neko_uninstall()
 		bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
 		bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
 	do
-		neko_uninstall inc "${file}"
+		neko_pkg uninstall inc "${file}"
 	done
 }
