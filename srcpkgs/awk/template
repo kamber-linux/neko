@@ -1,7 +1,19 @@
 pkgname="awk"
 version="20180827"
+deps="bison"
 distfiles="https://github.com/onetrueawk/awk/archive/refs/tags/${version}.tar.gz"
 build_style="makefile"
 TCC="false" # lib.c:578: error: incompatible types for redefinition of 'cmdname'
 license="custom"
 license_file="LICENSE"
+
+neko_install()
+{
+	mv a.out awk
+	neko_pkg install bin awk
+}
+
+neko_uninstall()
+{
+	neko_pkg uninstall bin awk
+}

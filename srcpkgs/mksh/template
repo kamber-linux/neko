@@ -13,7 +13,7 @@ neko_install()
 {
 	neko_pkg install bin mksh
 	neko_pkg install man mksh.1
-	cp dot.mkshrc .mkshrc
+	mv dot.mkshrc .mkshrc
 	neko_pkg install conf .mkshrc /skel
 }
 
