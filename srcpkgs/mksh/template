@@ -1,9 +1,7 @@
-pkgname=mksh
-version=R59c
+pkgname="mksh"
+version="R59c"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
-checksum=77ae1665a337f1c48c61d6b961db3e52119b38e58884d1c89684af31f87bc506
-archive=mksh-"${version}".tgz
-wrksrc=mksh
+wrksrc="mksh"
 
 neko_build()
 {

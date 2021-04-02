@@ -1,5 +1,6 @@
-pkgname=libXinerama
-version=1.1.4
+pkgname="libXinerama"
+version="1.1.4"
 distfiles="https://www.x.org/releases/individual/lib/libXinerama-${version}.tar.gz"
-checksum=64de45e18cc76b8e703cb09b3c9d28bd16e3d05d5cd99f2d630de2d62c3acc18
-build_style=configure
+build_style="configure"
+license="MIT"
+license_file="COPYING"

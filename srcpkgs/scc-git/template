@@ -1,0 +1,3 @@
+pkgname="scc"
+giturl="git://git.simple-cc.org/scc"
+build_style="makefile"

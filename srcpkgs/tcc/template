@@ -1,0 +1,5 @@
+pkgname="tcc"
+version="0.9.27"
+distfiles="https://download.savannah.gnu.org/releases/tinycc/tcc-${version}.tar.bz2"
+build_style="configure"
+configure_args="--config-musl"

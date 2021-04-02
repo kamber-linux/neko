@@ -1,5 +1,4 @@
 pkgname=surf
 version=2.0
 distfiles="https://dl.suckless.org/${pkgname}/${pkgname}-${version}.tar.gz"
-checksum=faee4c7a62c38fc9791eff1ad06787c3c9b2b79f338806827f5152a7bc54951d
 build_style=makefile

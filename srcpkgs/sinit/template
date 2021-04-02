@@ -1,0 +1,4 @@
+pkgname="sinit"
+version="1.0"
+distfiles="https://dl.suckless.org/sinit/sinit-${version}.tar.gz"
+build_style="makefile"

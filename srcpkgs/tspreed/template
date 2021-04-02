@@ -1,9 +1,7 @@
-pkgname=tspreed
-version=2.0.0
-distfiles="https://github.com/n-ivkovic/${pkgname}/archive/v${version}.tar.gz"
-checksum=d60780dc0a5fc9b3ce408efc1968d947b4af7a7e7debd19d2e86320525af04f3
-archive=v${version}.tar.gz
-build_style=makefile
+pkgname="tspreed"
+version="2.0.1"
+distfiles="https://github.com/n-ivkovic/tspreed/archive/v${version}.tar.gz"
+build_style="makefile"
 
 # tspreed doesn't need to build
 neko_build()
