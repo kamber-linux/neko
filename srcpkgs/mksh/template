@@ -11,14 +11,15 @@ neko_build()
 
 neko_install()
 {
-	neko_pkg bin mksh
-	neko_pkg man mksh.1
-	neko_pkg conf dot.mkshrc /skel/.mkshrc
+	neko_pkg install bin mksh
+	neko_pkg install man mksh.1
+	cp dot.mkshrc .mkshrc
+	neko_pkg install conf .mkshrc /skel
 }
 
 neko_uninstall()
 {
-	neko_pkg uninstall /bin/mksh
-	neko_pkg uninstall /share/man/man1/mksh.1
-	neko_pkg uninstall /etc/skel/.mkshrc
+	neko_pkg uninstall bin mksh
+	neko_pkg uninstall man mksh.1
+	neko_pkg uninstall conf skel/.mkshrc
 }
