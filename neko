@@ -5,6 +5,12 @@
 # some variables are sourced from the specified template
 # shellcheck disable=SC2154
 
+# Must match with makefile for root stuff
+root_base_dir="${DESTDIR}"/usr/local/share/neko
+root_pkgs_dir="${root_base_dir}"/srcpkgs
+root_master_dir="${root_base_dir}"/master
+root_licenses_dir="${root_base_dir}"/licenses
+
 base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
 pkgs_dir="${base_dir}"/srcpkgs
 master_dir="${base_dir}"/master
