@@ -41,7 +41,7 @@ neko_pkg()
 				"man")
 					mkdir -p "${DESTDIR}"/usr/local/share/man/man"${4:-1}"
 					cp -r "${3}" "${DESTDIR}"/usr/local/share/man/man"${4:-1}"
-					chmod 644 "${DESTDIR}"/usr/local/share/man/man"${4:-1}"/${3}
+					chmod 644 "${DESTDIR}"/usr/local/share/man/man"${4:-1}"/"${3}"
 					;;
 				"lib")
 					mkdir -p "${DESTDIR}"/usr/local/lib
@@ -67,24 +67,12 @@ neko_pkg()
 			;;
 		"uninstall")
 			case "${2}" in
-				"bin")
-					rm -rf "${DESTDIR:?}"/usr/local/bin/"${3}"
-					;;
-				"man")
-					rm -rf "${DESTDIR:?}"/usr/local/share/man/man"${4:-1}"/"${3}"
-					;;
-				"lib")
-					rm -rf "${DESTDIR:?}"/usr/local/lib/"${3}"
-					;;
-				"inc")
-					rm -rf "${DESTDIR:?}"/usr/local/include/"${3}"
-					;;
-				"conf")
-					rm -rf "${DESTDIR:?}"/etc/"${3}"
-					;;
-				"file")
-					rm -rf "${DESTDIR:?}"/usr/local"${3}"
-					;;
+				"bin") rm -rf "${DESTDIR:?}"/usr/local/bin/"${3}" ;;
+				"man") rm -rf "${DESTDIR:?}"/usr/local/share/man/man"${4:-1}"/"${3}" ;;
+				"lib") rm -rf "${DESTDIR:?}"/usr/local/lib/"${3}" ;;
+				"inc") rm -rf "${DESTDIR:?}"/usr/local/include/"${3}" ;;
+				"conf") rm -rf "${DESTDIR:?}"/etc/"${3}" ;;
+				"file") rm -rf "${DESTDIR:?}"/usr/local"${3}" ;;
 			esac
 			;;
 	esac
@@ -150,6 +138,7 @@ neko_prepare()
 		done
 	fi
 	patches_dir="${pkgs_dir}"/"${1}"/patches
+	files_dir="${pkgs_dir}"/"${1}"/files
 	if [ "${distfiles}" ]
 	then
 		wrksrc="${pkgname}"-"${version}"
@@ -243,12 +232,34 @@ neko_build()
 		"makefile")
 			if [ "${make_args}" ]
 			then
+				bmake "${make_args}"
+			else
+				bmake
+			fi
+			;;
+		"gnu-makefile")
+			if [ "${make_args}" ]
+			then
 				make "${make_args}"
 			else
 				make
 			fi
 			;;
 		"configure")
+			if [ "${configure_args}" ]
+			then
+				./configure "${configure_args}"
+			else
+				./configure
+			fi
+			if [ "${make_args}" ]
+			then
+				bmake "${make_args}"
+			else
+				bmake
+			fi
+			;;
+		"gnu-configure")
 			if [ "${configure_args}" ]
 			then
 				./configure "${configure_args}"
@@ -266,6 +277,7 @@ neko_build()
 			export CC=cc # meson can't build with tcc compiler
 			meson build
 			ninja -C build
+			;;
 	esac
 }
 
@@ -290,7 +302,7 @@ neko_license()
 	for pkg_license in ${license}
 	do
 		case "${pkg_license}" in
-			"MIT" | "custom")
+			"MIT" | "BSD-3-Clause" | "custom")
 				mkdir -p "${DESTIR}"/usr/local/share/licenses/"${pkgname}"
 				cp -r "${license_file}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
 				chmod 644 "${DESTDIR}"/usr/local/share/licenses/"${license_file}"

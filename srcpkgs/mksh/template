@@ -2,11 +2,12 @@ pkgname="mksh"
 version="R59c"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
 wrksrc="mksh"
+license="custom"
+license_file="${files_dir}/TaC-mksh.txt"
 
 neko_build()
 {
-	chmod +x ./Build.sh
-	./Build.sh -r
+	sh ./Build.sh -r
 }
 
 neko_install()
