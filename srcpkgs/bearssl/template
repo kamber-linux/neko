@@ -10,8 +10,6 @@ neko_install()
 	neko_pkg install bin build/brssl
 	neko_pkg install lib build/libbearssl.so
 	neko_pkg install lib build/libbearssl.a
-	# Possibly move to bearssl-devel package
-	neko_pkg install inc inc/*
 }
 
 neko_uninstall()
@@ -19,10 +17,22 @@ neko_uninstall()
 	neko_pkg uninstall bin brssl
 	neko_pkg uninstall lib libbearssl.so
 	neko_pkg uninstall lib libbearssl.a
-	for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
-		bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
-		bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
-	do
-		neko_pkg uninstall inc "${file}"
-	done
+}
+
+neko_subpkg()
+{
+	pkgname="$bearssl-devel"
+	neko_install()
+	{
+		neko_pkg install inc inc/*
+	}
+	neko_uninstall()
+	{
+		for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
+			bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
+			bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
+		do
+			neko_pkg uninstall inc "${file}"
+		done
+	}
 }

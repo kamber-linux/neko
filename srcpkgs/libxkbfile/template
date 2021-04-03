@@ -1,0 +1,6 @@
+pkgname="libxkbfile"
+version="1.1.0"
+distfiles="https://x.org/releases/individual/lib/libxkbfile-${version}.tar.gz"
+build_style="configure"
+license="MIT"
+license_file="COPYING"

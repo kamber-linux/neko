@@ -1,0 +1,12 @@
+pkgname="krb5"
+version="1.19.1"
+distfiles="http://web.mit.edu/kerberos/dist/krb5/${version%.*}/krb5-${version}.tar.gz"
+build_style="configure"
+license="MIT"
+license_file="NOTICE"
+
+neko_build()
+{
+	./src/configure
+	make
+}
