@@ -1,6 +1,6 @@
 pkgname="awk"
-version="20180827"
 deps="bison"
+version="20180827"
 distfiles="https://github.com/onetrueawk/awk/archive/refs/tags/${version}.tar.gz"
 build_style="makefile"
 TCC="false" # lib.c:578: error: incompatible types for redefinition of 'cmdname'
