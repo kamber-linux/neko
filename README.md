@@ -128,15 +128,19 @@ For contributing to the shell script, shellcheck is used to ensure portability. 
 **PACKAGES MUST:**
 * Be able to be built against musl libc libraries
 * Be able to be built against bearssl libraries
+
 I strongly push for packages to:
 * Adhere to XDG specifications (e.g. not filling up your `$HOME` folder)
 * Try and be compiled with TCC (if possible) to save time on compiling
+
 As for how to contribute, it's similar to VOID.
 I love the way VOID handles pull requests for new packages, so we'll follow. When pull requesting for packages, request to merge with the master branch.
 ### New packages
 For a new package, there should only be one commit per package with the commit message: `New package: <pkgname>-<version>`. If you're requesting a git build, please attach `-git` to the end of the package name (`srcpkgs/<pkgname>-git/template` will have `pkgname=<pkgname>-git`) with the commit message: `New package: <pkgname>-git`.
 ### Updating packages
 For updating a package, please have the commit message be: `<pkgname>: update to <version>`.
+### Patches
+This is how I would recommend doing patches. Make two directories, `a` and `b`, then copy the file / files you want to patch to both. Edit the file / files in `b`. Then, `diff -Naur a/<file> b/<file> > <patch-name>.patch`. Then make a directory in `srcpkgs/<pkgname>` called `patches` and put it in there.
 # TODO
 * Add a license variable to the template to handle licenses of packages
 * Add more build styles / packages
