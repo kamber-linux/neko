@@ -1,0 +1,5 @@
+pkgname="tar"
+version="1.34"
+distfiles="https://ftp.gnu.org/gnu/tar/tar-${version}.tar.gz"
+build_style="configure"
+license="GPL-3.0-or-later"

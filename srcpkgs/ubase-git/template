@@ -1,3 +1,0 @@
-pkgname=ubase
-giturl="git://git.suckless.org/ubase"
-build_style=makefile

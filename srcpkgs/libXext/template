@@ -1,0 +1,6 @@
+pkgname="libXext"
+version="1.3.4"
+distfiles="https://www.x.org/releases/individual/lib/libXext-${version}.tar.gz"
+build_style="configure"
+license="MIT"
+license_file="COPYING"

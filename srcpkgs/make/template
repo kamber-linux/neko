@@ -1,0 +1,5 @@
+pkgname="make"
+version="4.3"
+distfiles="https://ftp.gnu.org/gnu/make/make-${version}.tar.gz"
+build_style="configure"
+license="GPL-3.0-or-later"

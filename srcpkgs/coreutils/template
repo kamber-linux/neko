@@ -1,0 +1,3 @@
+pkgname="coreutils"
+deps="sbase-git ubase"
+build_style="meta"

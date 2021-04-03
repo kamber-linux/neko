@@ -1,5 +1,6 @@
-pkgname=libX11
-version=1.7.0
-distfiles="https://www.x.org/releases/individual/lib/${pkgname}-${version}.tar.gz"
-build_style=configure
-checksum=c48ec61785ec68fc6a9a6aca0a9578393414fe2562e3cc9cca30234345c7b6ac
+pkgname="libX11"
+version="1.7.0"
+distfiles="https://www.x.org/releases/individual/lib/libX11-${version}.tar.gz"
+build_style="gnu-configure"
+license="MIT"
+license_file="COPYING"

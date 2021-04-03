@@ -1,0 +1,7 @@
+pkgname="gcc"
+version="10.2.0"
+distfiles="https://ftp.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.gz"
+build_style="configure"
+configure_args="--disable-multilib"
+TCC="false"
+license="GPL-3.0-or-later"

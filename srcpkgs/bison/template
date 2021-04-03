@@ -1,0 +1,5 @@
+pkgname="bison"
+version="3.7"
+distfiles="https://ftp.gnu.org/gnu/bison/bison-${version}.tar.gz"
+build_style="configure"
+license="GPL-3.0-or-later"

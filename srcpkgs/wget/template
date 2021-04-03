@@ -1,5 +1,4 @@
-pkgname=wget
-version=1.21
-distfiles="https://ftp.gnu.org/gnu/${pkgname}/${pkgname}-${version}.tar.gz"
-checksum=b3bc1a9bd0c19836c9709c318d41c19c11215a07514f49f89b40b9d50ab49325
-build_style=configure
+pkgname="wget"
+version="1.21"
+distfiles="https://ftp.gnu.org/gnu/wget/wget-${version}.tar.gz"
+build_style="configure"

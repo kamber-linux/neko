@@ -1,0 +1,3 @@
+pkgname="base-system"
+deps="tcc gcc bmake make meson ninja python sbase-git ubase awk mksh"
+build_style="meta"

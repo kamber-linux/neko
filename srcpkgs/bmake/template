@@ -1,0 +1,8 @@
+pkgname="bmake"
+version="20210314"
+distfiles="http://www.crufty.net/ftp/pub/sjg/bmake-${version}.tar.gz"
+wrksrc="bmake"
+build_style="configure"
+TCC="false" # getopt:0: error: unrecognized character \x7f
+license="BSD-3-Clause"
+license_file="LICENSE"

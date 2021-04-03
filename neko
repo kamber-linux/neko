@@ -4,13 +4,25 @@
 # shellcheck source=/dev/null
 # some variables are sourced from the specified template
 # shellcheck disable=SC2154
+# Unused variables left for readability
+# shellcheck disable=SC2034
 
-# .gitignore file doesn't push master directory
-[ ! -d master ] && mkdir -p master
+# Must match with makefile for root stuff
+# The use of these are in development
+#root_base_dir="${DESTDIR}"/usr/local/share/neko
+#root_pkgs_dir="${root_base_dir}"/srcpkgs
+#root_master_dir="${root_base_dir}"/master
+#root_licenses_dir="${root_base_dir}"/licenses
 
-# Check for permissions
-user_id=$(id | cut -d' ' -f1 | sed 's/uid=//;s/(.*//')
-[ "${user_id}" = 0 ] && perms="root" || perms="anon"
+# To allow while testing ${DESTDIR:?}
+DESTDIR=
+
+base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
+pkgs_dir="${base_dir}"/srcpkgs
+master_dir="${base_dir}"/master
+licenses_dir="${base_dir}"/licenses
+
+[ "$(id -u)" = "0" ] && perms="root" || perms="anon"
 
 neko_msg()
 {
@@ -22,28 +34,238 @@ neko_msg()
 	esac
 }
 
+neko_pkg()
+{
+	case "${1}" in
+		"install")
+			case "${2}" in
+				"bin")
+					echo "Installing ${3}..."
+					if
+						mkdir -p "${DESTDIR}"/usr/local/bin
+						cp -r "${3}" "${DESTDIR}"/usr/local/bin
+						chmod 755 "${DESTDIR}"/usr/local/bin/"$(basename "${3}")"
+					then
+						echo "Successfully installed ${3}"
+					else
+						echo "Failed to install ${3}"
+					fi
+					;;
+				"man")
+					echo "Installing ${3}..."
+					if
+						mkdir -p "${DESTDIR}"/usr/local/share/man/man"${4:-1}"
+						cp -r "${3}" "${DESTDIR}"/usr/local/share/man/man"${4:-1}"
+						chmod 644 "${DESTDIR}"/usr/local/share/man/man"${4:-1}"/"$(basename "${3}")"
+					then
+						echo "Successfully installed ${3}"
+					else
+						echo "Failed to install ${3}"
+					fi
+					;;
+				"lib")
+					echo "Installing ${3}..."
+					if
+						mkdir -p "${DESTDIR}"/usr/local/lib
+						cp -r "${3}" "${DESTDIR}"/usr/local/lib
+						chmod 644 "${DESTDIR}"/usr/local/lib/"$(basename "${3}")"
+					then
+						echo "Successfully installed ${3}"
+					else
+						echo "Failed to install ${3}"
+					fi
+					;;
+				"inc")
+					neko_msg normal "Installing ${3}..."
+					if
+						mkdir -p "${DESTDIR}"/usr/local/include
+						cp -r "${3}" "${DESTDIR}"/usr/local/include
+						chmod 644 "${DESTDIR}"/usr/local/include/"$(basename "${2}")"
+					then
+						echo "Successfully installed ${3}"
+					else
+						echo "Failed to install ${3}"
+					fi
+					;;
+				"conf")
+					echo "Installing ${3}..."
+					if
+						mkdir -p "${DESTDIR}"/etc"${4}"
+						cp -r "${3}" "${DESTDIR}"/etc"${4}"
+						chmod 644 "${DESTDIR}"/etc"${4}"/"$(basename "${3}")"
+					then
+						echo "Successfully installed ${3}"
+					else
+						echo "Failed to install ${3}"
+					fi
+					;;
+				"file")
+					echo "Installing ${4}..."
+					if
+						mkdir -p "${DESTDIR}"/usr/local"${5}"
+						cp -r "${4}" "${DESTDIR}"/usr/local"${5}"
+						chmod "${3}" "${DESTDIR}"/usr/local"${5}"/"$(basename "${4}")"
+					then
+						echo "Successfully installed ${4}"
+					else
+						echo "Failed to install ${4}"
+					fi
+					;;
+			esac
+			;;
+		"uninstall")
+			case "${2}" in
+				"bin")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/usr/local/bin/"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+				"man")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/usr/local/share/man/man"${4:-1}"/"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+				"lib")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/usr/local/lib/"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+				"inc")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/usr/local/include/"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+				"conf")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/etc/"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+				"file")
+					echo "Uninstalling ${3}..."
+					if
+						rm -rf "${DESTDIR:?}"/usr/local"${3}"
+					then
+						echo "Successfully uninstalled ${3}"
+					else
+						echo "Failed to uninstall ${3}"
+					fi
+					;;
+			esac
+			;;
+	esac
+}
+
+neko_init()
+{
+	for dir in "${base_dir}" "${pkgs_dir}" "${master_dir}" "${licenses_dir}"
+	do
+		[ ! -d "${dir}" ] && neko_msg normal "Making dir ${dir}..." && if
+		mkdir -p "${dir}"
+	then
+		neko_msg success "Successfully made dir ${dir}"
+	else
+		neko_msg error "Failed to make dir ${dir}" && exit
+		fi
+	done
+	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
+	if
+		cp -r srcpkgs "${base_dir}"
+	then
+		neko_msg success "Successfully copied base srcpkgs to ${base_dir}"
+	else
+		neko_msg error "Failed to copy base srcpkgs to ${base_dir}" && exit
+	fi
+	neko_msg normal "Copying licenses to ${base_dir}..."
+	if
+		cp -r licenses "${base_dir}"
+	then
+		neko_msg success "Successfully copied licenses to ${base_dir}"
+	else
+		neko_msg error "Failed to copy licenses to ${base_dir}..." && exit
+	fi
+}
+
+neko_zap()
+{
+	neko_msg normal "Zapping neko directory ${base_dir}..."
+	if
+		rm -rf "${base_dir:?}"/*
+	then
+		neko_msg success "Successfully zapped neko directory"
+	else
+		neko_msg error "Failed to zap neko directory" && exit
+	fi
+
+}
+
 neko_prepare()
 {
-	[ ! -f srcpkgs/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
-	neko_msg normal "Preparing environment..."
-	. srcpkgs/"${1}"/template
-	patches_dir=srcpkgs/"${1}"/patches
+	[ ! -d "${pkgs_dir}" ] && neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${master_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -f "${pkgs_dir}"/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
+	. "${pkgs_dir}"/"${1}"/template
+	[ "${build_style}" != "meta" ] && neko_msg normal "Preparing environment..."
+	# Check for dependencies
+	if [ "${deps}" ]
+	then
+		for pkg_dep in ${deps}
+		do
+			# neko_msg normal "${pkg_dep}"
+			./neko pkg "${pkg_dep}"
+		done
+	fi
+	patches_dir="${pkgs_dir}"/"${1}"/patches
+	files_dir="${pkgs_dir}"/"${1}"/files
 	if [ "${distfiles}" ]
 	then
-		wrksrc="${pkgname}-${version}"
+		wrksrc="${pkgname}"-"${version}"
 	elif [ "${giturl}" ]
 	then
-		wrksrc="${pkgname}"
+		wrksrc="$(echo "${pkgname}" | sed 's/-git//')"
 	fi
-	archive="${pkgname}-${version}.tar.gz"
+	archive="${distfiles##*/}"
+	# Try and use TCC by default
+	if [ "${TCC}" = "false" ]
+	then
+		export CC=cc
+	else
+		export CC=tcc
+	fi
 	# Allow override of wrksrc and archive
-	. srcpkgs/"${1}"/template
-	[ -d master/"${wrksrc}" ] && rm -rf master/"${wrksrc}"
-	cd master || exit
+	. "${pkgs_dir}"/"${1}"/template
+	# Remove duplicate git repo
+	[ -d "${master_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${master_dir:?}"/"${wrksrc:?}"
+	cd "${master_dir}" || exit
 }
 
 neko_fetch()
 {
+	[ "${build_style}" = "meta" ] && return
 	neko_msg normal "Downloading source for ${1}..."
 	if [ "${distfiles}" ]
 	then
@@ -52,7 +274,7 @@ neko_fetch()
 		then
 			neko_msg success "Successfully fetched distfiles for ${1}"
 		else
-			neko_msg error "Failed to fetch distfiles for ${1}"
+			neko_msg error "Failed to fetch distfiles for ${1}" && exit
 		fi
 	elif [ "${giturl}" ]
 	then
@@ -61,84 +283,107 @@ neko_fetch()
 		then
 			neko_msg success "Successfully cloned git repo for ${1}"
 		else
-			neko_msg error "Failed to clone git repo for ${1}"
+			neko_msg error "Failed to clone git repo for ${1}" && exit
 		fi
 	else
-		neko_msg error "No distfiles or giturl specified"
-	fi
-}
-
-neko_check()
-{
-	if [ "${distfiles}" ]
-	then
-		neko_msg normal "Verifying SHA-256 checksum of distfiles for ${1}..."
-		distfiles_checksum=$(sha256sum "${archive}" | cut -d' ' -f1)
-		neko_msg normal "Checksum of distfiles: ${distfiles_checksum}"
-		neko_msg normal "Checksum in template:  ${checksum}"
-		if [ "${checksum}" = "${distfiles_checksum}" ]
-		then
-			neko_msg success "Checksums match"
-		else
-			neko_msg error "Checksum mismatch - aborting" && exit
-		fi
+		[ "${build_style}" != "meta" ] && neko_msg error "No distfiles or giturl specified"
 	fi
 }
 
 neko_extract()
 {
+	[ "${build_style}" = "meta" ] && return
 	neko_msg normal "Extracting distfiles for ${1}..."
-	[ "${distfiles}" ] && tar zxvf "${archive}"
+	[ "${distfiles}" ] && case "${archive##*.}" in
+	"gz" | "tgz")
+		tar -zxvf "${archive}"
+		;;
+	"bz2" | "xz")
+		tar -xvf "${archive}"
+		;; 
+esac
 	cd "${wrksrc}" || exit
 }
 
 neko_patch()
 {
-	if [ -d ../../"${patches_dir}" ]
+	if [ -d "${patches_dir}" ]
 	then
 		neko_msg normal "Applying patches for ${1}..."
-		if
-			for patch in ../../"${patches_dir}"/*.patch
-			do
-				neko_msg normal "Applying patch ${patch##*/}..."
+		for patch in "${patches_dir}"/*.patch
+		do
+			neko_msg normal "Applying patch ${patch##*/}..."
+			if
 				patch -Np1 < "${patch}"
-			done
-		then
-			neko_msg success "Successfully applied patches to ${1}"
-		else
-			neko_msg error "Failed to apply one or more patches to ${1}"
-		fi
+			then
+				neko_msg normal "Successfully applied patch ${patch##*/}"
+			else
+				neko_msg error "Failed to apply patch ${patch##*/}" && exit
+			fi
+		done
 	fi
 }
 
 neko_build()
 {
-	# Try and use TCC by default
-	if [ "${TCC}" = "false" ]
-	then
-		export CC=cc
-	else
-		export CC=tcc
-	fi
-	neko_msg normal "Building ${1}..."
 	case "${build_style}" in
+		"meta")
+			:
+			;;
 		"makefile")
-			make
+			if [ "${make_args}" ]
+			then
+				bmake "${make_args}"
+			else
+				bmake
+			fi
+			;;
+		"gnu-makefile")
+			if [ "${make_args}" ]
+			then
+				make "${make_args}"
+			else
+				make
+			fi
 			;;
 		"configure")
-			./configure
-			make
+			if [ "${configure_args}" ]
+			then
+				./configure "${configure_args}"
+			else
+				./configure
+			fi
+			if [ "${make_args}" ]
+			then
+				bmake "${make_args}"
+			else
+				bmake
+			fi
+			;;
+		"gnu-configure")
+			if [ "${configure_args}" ]
+			then
+				./configure "${configure_args}"
+			else
+				./configure
+			fi
+			if [ "${make_args}" ]
+			then
+				make "${make_args}"
+			else
+				make
+			fi
 			;;
 		"meson")
 			export CC=cc # meson can't build with tcc compiler
 			meson build
 			ninja -C build
+			;;
 	esac
 }
 
 neko_install()
 {
-	neko_msg normal "Installing ${1}..."
 	case "${build_style}" in
 		"makefile")
 			make install
@@ -152,6 +397,29 @@ neko_install()
 	esac
 }
 
+neko_license()
+{
+	for pkg_license in ${license}
+	do
+		case "${pkg_license}" in
+			"MIT" | "BSD-3-Clause" | "custom")
+				mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+				cp -r "${license_file}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+				chmod 644 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${license_file}"
+				;;
+			"GPL-3.0-only" | "GPL-3.0-or-later")
+				mkdir -p "${DESTDIR}"/usr/local/share/licenses
+				cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
+				chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
+				;;
+			*)
+				:
+				;;
+		esac
+	done
+}
+
+
 neko_uninstall()
 {
 	case "${build_style}" in
@@ -162,11 +430,18 @@ neko_uninstall()
 }
 
 case "${1}" in
+	"init")
+		neko_init
+		;;
+	"zap")
+		neko_zap
+		;;
 	"pkg")
-		for step in prepare fetch check extract patch
+		for step in prepare fetch extract patch
 		do
 			neko_"${step}" "${2}"
 		done
+		[ "${build_style}" != "meta" ] && neko_msg normal "Building ${1}..."
 		if
 			neko_build "${2}"
 		then
@@ -178,19 +453,20 @@ case "${1}" in
 	"clean")
 		neko_msg normal "Cleaning source directory..."
 		if
-			rm -rf master/*
+			rm -rf "${master_dir:?}"/*
 		then
 			neko_msg success "Successfully cleaned master directory"
 		else
-			neko_msg error "Failed to clean master directory"
+			neko_msg error "Failed to clean master directory" && exit
 		fi
 		;;
 	"em" | "emerge")
 		[ "${perms}" = "anon" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch check extract patch
+		for step in prepare fetch extract patch
 		do
 			neko_"${step}" "${2}"
 		done
+		[ "${build_style}" != "meta" ] && neko_msg normal "Building ${1}..."
 		if
 			neko_build "${2}"
 		then
@@ -198,8 +474,10 @@ case "${1}" in
 		else
 			neko_msg error "Failed to build ${2}" && exit
 		fi
+		neko_msg normal "Installing ${1}..."
 		if
 			neko_install "${2}"
+			neko_license
 		then
 			neko_msg success "Successfully installed ${2}"
 		else
@@ -207,7 +485,7 @@ case "${1}" in
 		fi
 		;;
 	"uninstall")
-		for step in prepare fetch check extract patch
+		for step in prepare fetch extract
 		do
 			neko_"${step}" "${2}"
 		done
@@ -216,7 +494,25 @@ case "${1}" in
 		then
 			neko_msg success "Successfully uninstalled ${2}"
 		else
-			neko_msg error "Failed to uninstall ${2}" && exit
+			neko_msg error "Failed to uninstall ${2}"
+		fi
+		;;
+	"new")
+		[ -d "${pkgs_dir}"/"${2}" ] && neko_msg error "There's already a template for ${2}" && exit
+		neko_msg normal "Making a base template for ${2}..."
+		if
+			mkdir -p "${pkgs_dir}"/"${2}"
+			{
+			echo "pkgname=\"${2}\""
+			echo "version=\"1.0\""
+			echo "distfiles=\"url.to/source-\${version}.tar.gz\""
+			echo "build_style=\"makefile\""
+			echo "license=\"GPL-3.0-or-later\""
+			} >> "${pkgs_dir}"/"${2}"/template
+		then
+			neko_msg success "Made a template for ${2} in ${pkgs_dir}/${2}"
+		else
+			neko_msg error "Failed to make a template for ${2}"
 		fi
 		;;
 	*)

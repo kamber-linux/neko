@@ -1,28 +1,38 @@
-pkgname=bearssl
-version=0.6
-distfiles="https://bearssl.org/${pkgname}-${version}.tar.gz"
-checksum=6705bba1714961b41a728dfc5debbe348d2966c117649392f8c8139efc83ff14
-build_style=makefile
+pkgname="bearssl"
+version="0.6"
+distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
+build_style="makefile"
+license="MIT"
+license_file="LICENSE.txt"
 
 neko_install()
 {
-	mkdir -p ${DESTDIR}/usr/local/bin
-	cp -r build/brssl ${DESTDIR}/usr/local/bin
-	chmod 755 ${DESTIR}/usr/local/bin/brssl
-
-	mkdir -p ${DESTDIR}/usr/local/lib
-	cp -r build/lib${pkgname}.so ${DESTDIR}/usr/local/lib
-	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.so
-	cp -r build/lib${pkgname}.a ${DESTDIR}/usr/local/lib
-	chmod 644 ${DESTDIR}/usr/local/lib/lib${pkgname}.a
-
-	mkdir -p ${DESTDIR}/usr/local/include
-	cp -r inc/* ${DESTDIR}/usr/local/include
+	neko_pkg install bin build/brssl
+	neko_pkg install lib build/libbearssl.so
+	neko_pkg install lib build/libbearssl.a
 }
 
 neko_uninstall()
 {
-	rm -rf ${DESTDIR}/usr/local/bin/brssl
-	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.so
-	rm -rf ${DESTDIR}/usr/local/lib/lib${pkgname}.a
+	neko_pkg uninstall bin brssl
+	neko_pkg uninstall lib libbearssl.so
+	neko_pkg uninstall lib libbearssl.a
+}
+
+neko_subpkg()
+{
+	pkgname="$bearssl-devel"
+	neko_install()
+	{
+		neko_pkg install inc inc/*
+	}
+	neko_uninstall()
+	{
+		for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
+			bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
+			bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
+		do
+			neko_pkg uninstall inc "${file}"
+		done
+	}
 }

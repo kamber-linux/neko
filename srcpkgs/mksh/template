@@ -1,12 +1,26 @@
-pkgname=mksh
-version=R59c
-distfiles="http://www.mirbsd.org/MirOS/dist/mir/${pkgname}/${pkgname}-${version}.tgz"
-checksum=77ae1665a337f1c48c61d6b961db3e52119b38e58884d1c89684af31f87bc506
-archive="${pkgname}"-"${version}".tgz
-wrksrc="${pkgname}"
+pkgname="mksh"
+version="R59c"
+distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
+wrksrc="mksh"
+license="custom"
+license_file="${files_dir}/TaC-mksh.txt"
 
 neko_build()
 {
-	chmod +x ./Build.sh
-	./Build.sh -r
+	sh ./Build.sh -r
+}
+
+neko_install()
+{
+	neko_pkg install bin mksh
+	neko_pkg install man mksh.1
+	mv dot.mkshrc .mkshrc
+	neko_pkg install conf .mkshrc /skel
+}
+
+neko_uninstall()
+{
+	neko_pkg uninstall bin mksh
+	neko_pkg uninstall man mksh.1
+	neko_pkg uninstall conf skel/.mkshrc
 }
