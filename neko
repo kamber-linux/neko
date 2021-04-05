@@ -224,15 +224,6 @@ neko_prepare()
 	[ ! -f "${pkgs_dir}"/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
 	. "${pkgs_dir}"/"${1}"/template
 	[ "${build_style}" != "meta" ] && neko_msg normal "Preparing environment..."
-	# Check for dependencies
-	if [ "${deps}" ]
-	then
-		for pkg_dep in ${deps}
-		do
-			# neko_msg normal "${pkg_dep}"
-			./neko pkg "${pkg_dep}"
-		done
-	fi
 	patches_dir="${pkgs_dir}"/"${1}"/patches
 	files_dir="${pkgs_dir}"/"${1}"/files
 	if [ "${distfiles}" ]
@@ -252,15 +243,15 @@ neko_prepare()
 	fi
 	# Allow override of wrksrc and archive
 	. "${pkgs_dir}"/"${1}"/template
-	# Remove duplicate git repo
+	# Remove duplicate wrksrc
 	[ -d "${src_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${src_dir:?}"/"${wrksrc:?}"
 	# Remove duplicate archive
-	[ -e "${src_dir}"/"${archive}" ] && rm -rf "${src_dir:?}"/"${archive:?}"
-	cd "${src_dir}" || exit
+	[ "${distfiles}" ] && [ -e "${src_dir}"/"${archive}" ] && [ "${build_style}" != "meta" ] && rm -rf "${src_dir:?}"/"${archive:?}"
 }
 
 neko_fetch()
 {
+	cd "${src_dir}" || exit
 	[ "${build_style}" = "meta" ] && return
 	neko_msg normal "Downloading source for ${1}..."
 	if [ "${distfiles}" ]
@@ -442,7 +433,12 @@ case "${1}" in
 		neko_zap
 		;;
 	"pkg")
-		for step in prepare fetch extract patch
+		neko_prepare "${2}"
+		[ "${deps}" ] && for pkg_deps in ${deps}
+		do
+			./neko pkg "${pkg_deps}"
+		done
+		for step in fetch extract patch
 		do
 			neko_"${step}" "${2}"
 		done
@@ -466,7 +462,7 @@ case "${1}" in
 	"clean")
 		neko_msg normal "Cleaning source directory..."
 		if
-			rm -rf "${master_dir:?}"/*
+			rm -rf "${src_dir:?}"/*
 		then
 			neko_msg success "Successfully cleaned master directory"
 		else
