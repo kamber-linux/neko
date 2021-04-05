@@ -1,5 +1,6 @@
 pkgname="krb5"
 version="1.19.1"
+revision="1"
 distfiles="http://web.mit.edu/kerberos/dist/krb5/${version%.*}/krb5-${version}.tar.gz"
 build_style="configure"
 license="MIT"

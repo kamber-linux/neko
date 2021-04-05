@@ -1,5 +1,6 @@
 pkgname="dwm"
 version="6.2"
+revision="1"
 distfiles="https://dl.suckless.org/dwm/dwm-${version}.tar.gz"
 build_style="makefile"
 license="MIT"

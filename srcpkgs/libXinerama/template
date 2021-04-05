@@ -1,7 +1,22 @@
 pkgname="libXinerama"
 deps="libX11 xorgproto libXext"
 version="1.1.4"
+revision="1"
 distfiles="https://www.x.org/releases/individual/lib/libXinerama-${version}.tar.gz"
 build_style="configure"
 license="MIT"
 license_file="COPYING"
+
+neko_subpkg()
+{
+	pkgname="libXinerama-devel"
+	neko_install()
+	{
+		neko_pkg install inc include/*
+	}
+	neko_uninstall()
+	{
+		neko uninstall inc X11/extensions/Xinerama.h
+		neko uninstall inc X11/extensions/panoramiXext.h
+	}
+}

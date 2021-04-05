@@ -1,4 +1,5 @@
 pkgname="wget"
 version="1.21"
+revision="1"
 distfiles="https://ftp.gnu.org/gnu/wget/wget-${version}.tar.gz"
 build_style="configure"

@@ -4,16 +4,14 @@
 SHELL = /bin/sh
 
 # Installation paths
-PREFIX       = /usr/local
-BINPREFIX    = ${PREFIX}/bin
-MANPREFIX    = ${PREFIX}/share/man/man1
-BASEPREFIX   = ${PREFIX}/share/neko
-MASTERPREFIX = ${BASEPREFIX}/master
+PREFIX     = /usr/local
+BINPREFIX  = ${PREFIX}/bin
+MANPREFIX  = ${PREFIX}/share/man/man1
+BASEPREFIX = ${PREFIX}/share/neko
 
-BINDIR    = ${DESTDIR}${BINPREFIX}
-MANDIR    = ${DESTDIR}${MANPREFIX}
-BASEDIR   = ${DESTDIR}${BASEPREFIX}
-MASTERDIR = ${DESTDIR}${MASTERPREFIX}
+BINDIR  = ${DESTDIR}${BINPREFIX}
+MANDIR  = ${DESTDIR}${MANPREFIX}
+BASEDIR = ${DESTDIR}${BASEPREFIX}
 
 default: help
 
@@ -30,7 +28,6 @@ install:
 	mkdir -p ${BASEDIR}
 	cp -r srcpkgs ${BASEDIR}
 	cp -r licenses ${BASEDIR}
-	mkdir -p ${MASTERDIR}
 
 uninstall:
 	@echo "\033[1mUninstalling binary...\033[0m"
