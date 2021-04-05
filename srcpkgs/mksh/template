@@ -1,5 +1,6 @@
 pkgname="mksh"
 version="R59c"
+revision="1"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
 wrksrc="mksh"
 license="custom"

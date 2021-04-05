@@ -1,5 +1,6 @@
 pkgname="libXfont2"
 version="2.0.4"
+revision="1"
 distfiles="https://x.org/releases/individual/lib/libXfont2-${version}.tar.gz"
 build_style="configure"
 license="MIT"

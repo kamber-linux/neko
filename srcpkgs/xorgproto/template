@@ -1,4 +1,5 @@
 pkgname="xorgproto"
 version="2021.3"
+revision="1"
 distfiles="https://www.x.org/releases/individual/proto/xorgproto-${version}.tar.gz"
 build_style="configure"

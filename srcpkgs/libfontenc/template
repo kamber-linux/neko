@@ -1,5 +1,6 @@
 pkgname="libfontenc"
 version="1.1.4"
+revision="1"
 distfiles="https://x.org/releases/individual/lib/libfontenc-${version}.tar.gz"
 build_style="configure"
 license="MIT"

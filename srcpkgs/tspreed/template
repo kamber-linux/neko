@@ -1,5 +1,6 @@
 pkgname="tspreed"
 version="2.0.1"
+revision="1"
 distfiles="https://github.com/n-ivkovic/tspreed/archive/v${version}.tar.gz"
 build_style="makefile"
 

@@ -1,5 +1,6 @@
 pkgname="bearssl"
 version="0.6"
+revision="1"
 distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
 build_style="makefile"
 license="MIT"
@@ -21,7 +22,7 @@ neko_uninstall()
 
 neko_subpkg()
 {
-	pkgname="$bearssl-devel"
+	pkgname="bearssl-devel"
 	neko_install()
 	{
 		neko_pkg install inc inc/*

@@ -1,5 +1,6 @@
 pkgname="st"
 version="0.8.4"
+revision="1"
 distfiles="https://dl.suckless.org/st/st-${version}.tar.gz"
 build_style="makefile"
 license="MIT"

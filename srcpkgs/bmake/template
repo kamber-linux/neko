@@ -1,5 +1,6 @@
 pkgname="bmake"
 version="20210314"
+revision="1"
 distfiles="http://www.crufty.net/ftp/pub/sjg/bmake-${version}.tar.gz"
 wrksrc="bmake"
 build_style="configure"

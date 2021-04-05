@@ -1,4 +1,5 @@
 pkgname="ubase"
 version="0.1"
+revision="1"
 distfiles="https://dl.suckless.org/ubase/ubase-${version}.tar.gz"
 build_style="makefile"

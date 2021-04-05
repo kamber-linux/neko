@@ -1,5 +1,5 @@
 # About
-`neko` is a WIP package manager written in POSIX shell script inspired by VOID's `xbps-src` bash script and Gentoo's portage source-based package manager. The command usage and name is inspired by Ataraxia's package manager of the same name (it means "cat" in Japanese 猫). The end goal is to write a package manager using POSIX shell and standard POSIX utilities found in userspaces such as suckless's sbase, GNU's Core Utils, among others (e.g. `id`, `sed`, `cut`, etc). This vision is to make it easy to write templates for like in `xbps-src` and source based installations like portage from Gentoo.
+`neko` is a WIP package manager written in POSIX shell script and (mostly) POSIX utilities inspired by VOID's `xbps-src` bash script package builder and Gentoo's portage source-based package manager. The command usage and name is inspired by Ataraxia's package manager of the same name (it means "cat" in Japanese 猫). The end goal is to write a package manager using POSIX shell and standard POSIX utilities found in userspaces such as suckless's sbase, GNU's Core Utils, among others (e.g. `id`, `sed`, `cut`, etc). The vision is to make it easy to write templates for like in `xbps-src` and have source based installations like portage from Gentoo.
 # Installation
 The `makefile` is really more for testing as this is not complete / able to be used, yet. With that in mind, the `install` rule will install the script and man page - `make install`.
 # Usage
@@ -8,6 +8,7 @@ Start with copying the included templates to the directory where builds are done
 Very similarly to VOID's package builder, `xbps-src`, every package has it's own folder in `srcpkgs` defined by its `template` file, which gives information on how to build, where to get the source, et cetera. For an example, `neko pkg st` will build based off of `srcpkgs/st/template`:
 ```
 pkgname="st"
+revision="1"
 version="0.8.4"
 distfiles="https://dl.suckless.org/st/st-${version}.tar.gz"
 build_style="makefile"
@@ -30,6 +31,7 @@ To make a new package for pull request, make a directory in `srcpkgs` with the `
 ```
 pkgname            - the name of the package
 version            - the version of the package (if applicable / not a git build)
+revision           - changes / updates to the template without changing the version, always starts at 1
 distfiles / giturl - the link to the source archive or the link to the git repo
 build_style        - the way to build the package (see Build Styles section)
 license            - the license that the software is released under
@@ -50,6 +52,7 @@ These steps can be over-written in the template, as well, if the upstream packag
 ```
 pkgname="bearssl"
 version="0.6"
+revision="1"
 distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
 build_style="makefile"
 
@@ -69,7 +72,7 @@ neko_uninstall()
 
 neko_subpkg()
 {
-	pkgname="$bearssl-devel"
+	pkgname="bearssl-devel"
 	neko_install()
 	{
 		neko_pkg install inc inc/*
@@ -88,6 +91,7 @@ neko_subpkg()
 ```
 pkgname="mksh"
 version="R59c"
+revision="1"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
 wrksrc="mksh"
 license="custom"
@@ -117,6 +121,7 @@ These build styles will try and use `bmake` and `tcc` by default. If GNU `make` 
 ```
 pkgname="musl"
 version="1.1.24"
+revision="1"
 distfiles="https://musl-libc.org/releases/musl-${version}.tar.gz"
 build_style="gnu-configure"
 TCC="false" # ./src/internal/dynlink.h:105: error: invalid type
@@ -142,6 +147,5 @@ For updating a package, please have the commit message be: `<pkgname>: update to
 ### Patches
 This is how I would recommend doing patches. Make two directories, `a` and `b`, then copy the file / files you want to patch to both. Edit the file / files in `b`. Then, `diff -Naur a/<file> b/<file> > <patch-name>.patch`. Then make a directory in `srcpkgs/<pkgname>` called `patches` and put it in there.
 # TODO
-* Add a license variable to the template to handle licenses of packages
 * Add more build styles / packages
 * Find a POSIX way to replace the `wget` solution for `neko_fetch`
