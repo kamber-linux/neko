@@ -1,0 +1,12 @@
+diff -Naur a/src/main.c b/src/main.c
+--- a/src/main.c	2021-04-05 17:12:23.232760091 -0600
++++ b/src/main.c	2021-04-05 17:13:42.051765048 -0600
+@@ -178,7 +178,7 @@
+ 
+   if (opt.homedir)
+     {
+-      char *dir = ajoin_dir_file(opt.homedir, ".wget-hsts");
++      char *dir = ajoin_dir_file(opt.homedir, ".cache/wget-hsts");
+       return dir;
+     }
+ 
