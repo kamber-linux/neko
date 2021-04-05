@@ -382,7 +382,7 @@ neko_install()
 			bmake install
 			;;
 		"gnu-configure")
-			make uninstall
+			make install
 			;;
 		"meson")
 			ninja -C build install
@@ -451,6 +451,7 @@ case "${1}" in
 			neko_msg error "Failed to build ${2}" && exit
 		fi
 		export DESTDIR="${master_dir}"
+		neko_msg normal "Installing ${2}..."
 		if
 			neko_install "${2}"
 		then
