@@ -8,8 +8,8 @@ Start with copying the included templates to the directory where builds are done
 Very similarly to VOID's package builder, `xbps-src`, every package has it's own folder in `srcpkgs` defined by its `template` file, which gives information on how to build, where to get the source, et cetera. For an example, `neko pkg st` will build based off of `srcpkgs/st/template`:
 ```
 pkgname="st"
-revision="1"
 version="0.8.4"
+revision="1"
 distfiles="https://dl.suckless.org/st/st-${version}.tar.gz"
 build_style="makefile"
 license="MIT"
