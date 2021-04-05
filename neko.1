@@ -1,21 +1,30 @@
 .TH NEKO 1
 .SH NAME
-neko \- package builder / installer (WIP)
+neko \- WIP package manager written in POSIX shell / utilities
 .SH SYNOPSIS
 .B neko
 [\fIOPTIONS\fR] [\fIPKG\fR]
 .SH DESCRIPTION
-This is a WIP package builder / installer inspired by VOID's xbps-src bash script.
+This is a WIP package manager inspired by VOID's xbps-src bash script package builder.
 .SH OPTIONS
 .TP
+.BR "init"
+Will initialize the environment for building packages and update changes made in srcpkgs
+.TP
 .BR "clean"
-Cleans up the master directory
+Cleans up the source directory
+.TP
+.BR "zap"
+Will totally remove everything from the neko base directory
 .TP
 .BR "pkg \fIPKG\fR"
-Will build \fIPKG\fR into the master directory
+Will build and install \fIPKG\fR into the master directory
 .TP
 .BR "em, emerge \fIPKG\fR"
 Will build \fIPKG\fR into the master directory and install to the system
+.TP
+.BR "find \fIPKG\fR"
+Will search for and list \fIPKG\fR from srcpkgs
 .TP
 .BR "uninstall \fIPKG\fR"
 Will uninstall \fIPKG\fR from the system
