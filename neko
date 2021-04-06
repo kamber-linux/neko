@@ -433,32 +433,36 @@ case "${1}" in
 		neko_zap
 		;;
 	"pkg")
-		neko_prepare "${2}"
-		[ "${deps}" ] && for pkg_deps in ${deps}
+		shift 1
+		for arg
 		do
-			./neko pkg "${pkg_deps}"
+			neko_prepare "${arg}"
+			[ "${deps}" ] && for pkg_deps in ${deps}
+			do
+				./neko pkg "${pkg_deps}"
+			done
+			for step in fetch extract patch
+			do
+				neko_"${step}" "${arg}"
+			done
+			[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
+			if
+				neko_build "${arg}"
+			then
+				neko_msg success "Successfully built ${arg}"
+			else
+				neko_msg error "Failed to build ${arg}" && exit
+			fi
+			export DESTDIR="${master_dir}"
+			neko_msg normal "Installing ${arg}..."
+			if
+				neko_install "${arg}"
+			then
+				neko_msg success "Successfully installed ${arg}"
+			else
+				neko_msg error "Failed to install ${arg}"
+			fi
 		done
-		for step in fetch extract patch
-		do
-			neko_"${step}" "${2}"
-		done
-		[ "${build_style}" != "meta" ] && neko_msg normal "Building ${2}..."
-		if
-			neko_build "${2}"
-		then
-			neko_msg success "Successfully built ${2}"
-		else
-			neko_msg error "Failed to build ${2}" && exit
-		fi
-		export DESTDIR="${master_dir}"
-		neko_msg normal "Installing ${2}..."
-		if
-			neko_install "${2}"
-		then
-			neko_msg success "Successfully installed ${2}"
-		else
-			neko_msg error "Failed to install ${2}"
-		fi
 		;;
 	"clean")
 		neko_msg normal "Cleaning source directory..."
@@ -472,41 +476,49 @@ case "${1}" in
 		;;
 	"em" | "emerge")
 		[ "$(id -u)" != "0" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch extract patch
+		shift 1
+		for arg
 		do
-			neko_"${step}" "${2}"
+			for step in prepare fetch extract patch
+			do
+				neko_"${step}" "${arg}"
+			done
+			[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
+			if
+				neko_build "${arg}"
+			then
+				neko_msg success "Successfully built ${arg}"
+			else
+				neko_msg error "Failed to build ${arg}" && exit
+			fi
+			neko_msg normal "Installing ${arg}..."
+			if
+				neko_install "${arg}"
+				neko_license
+			then
+				neko_msg success "Successfully installed ${arg}"
+			else
+				neko_msg error "Failed to install ${arg}" && exit
+			fi
 		done
-		[ "${build_style}" != "meta" ] && neko_msg normal "Building ${2}..."
-		if
-			neko_build "${2}"
-		then
-			neko_msg success "Successfully built ${2}"
-		else
-			neko_msg error "Failed to build ${2}" && exit
-		fi
-		neko_msg normal "Installing ${2}..."
-		if
-			neko_install "${2}"
-			neko_license
-		then
-			neko_msg success "Successfully installed ${2}"
-		else
-			neko_msg error "Failed to install ${2}" && exit
-		fi
 		;;
 	"uninstall")
 		[ "$(id -u)" != "0" ] && neko_msg error "You must have root permissions to run this command" && exit
-		for step in prepare fetch extract
+		shift 1
+		for arg
 		do
-			neko_"${step}" "${2}"
+			for step in prepare fetch extract patch
+			do
+				neko_"${step}" "${arg}"
+			done
+			if
+				neko_uninstall "${arg}"
+			then
+				neko_msg success "Successfully uninstalled ${arg}"
+			else
+				neko_msg error "Failed to uninstall ${arg}"
+			fi
 		done
-		if
-			neko_uninstall "${2}"
-		then
-			neko_msg success "Successfully uninstalled ${2}"
-		else
-			neko_msg error "Failed to uninstall ${2}"
-		fi
 		;;
 	"new")
 		[ -d "${pkgs_dir}"/"${2}" ] && neko_msg error "There's already a template for ${2}" && exit
@@ -527,16 +539,20 @@ case "${1}" in
 		fi
 		;;
 	"find")
-		[ "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${2}*" | wc -l)" = "0" ] && neko_msg normal "0 result(s) found for ${2}" && exit
-		neko_msg normal "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${2}*" | wc -l) result(s) found for ${2}"
-		for pkg_found in $(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${2}*" -print0 | xargs -0 -L1 basename)
+		shift 1
+		for arg
 		do
-			. "${pkgs_dir}"/"${pkg_found}"/template
-			[ "${distfiles}" ] && [ "${version}" ] && echo "\033[1m${pkg_found}-${version}_${revision}\033[0m"
-			[ "${build_style}" = "meta" ] && echo "\033[1m${pkg_found}_${revision}\033[0m"
-			[ "${giturl}" ] && echo "\033[1m${pkg_found}\033[0m"
-			unset version
-			unset giturl
+			[ "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l)" = "0" ] && neko_msg normal "0 result(s) found for ${arg}" && exit
+			neko_msg normal "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l) result(s) found for ${arg}"
+			for pkg_found in $(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -L1 basename)
+			do
+				. "${pkgs_dir}"/"${pkg_found}"/template
+				[ "${distfiles}" ] && [ "${version}" ] && echo "\033[1m${pkg_found}-${version}_${revision}\033[0m"
+				[ "${build_style}" = "meta" ] && echo "\033[1m${pkg_found}_${revision}\033[0m"
+				[ "${giturl}" ] && echo "\033[1m${pkg_found}\033[0m"
+				unset version
+				unset giturl
+			done
 		done
 		;;
 	*)
