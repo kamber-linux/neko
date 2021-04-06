@@ -16,6 +16,14 @@ src_dir="${base_dir}"/src
 master_dir="${base_dir}"/master
 licenses_dir="${base_dir}"/licenses
 
+trap interrupt 2
+
+interrupt()
+{
+	printf "\n\033[1m=> \033[31mneko:\033[0m Command interrupted\n"
+	exit 1
+}
+
 neko_msg()
 {
 	case "${1}" in
@@ -280,7 +288,7 @@ neko_fetch()
 neko_extract()
 {
 	[ "${build_style}" = "meta" ] && return
-	neko_msg normal "Extracting distfiles for ${1}..."
+	[ "${distfiles}" ] && neko_msg normal "Extracting distfiles for ${1}..."
 	[ "${distfiles}" ] && case "${archive##*.}" in
 	"gz" | "tgz")
 		tar -zxvf "${archive}"
@@ -437,7 +445,8 @@ case "${1}" in
 		for arg
 		do
 			neko_prepare "${arg}"
-			[ "${deps}" ] && for pkg_deps in ${deps}
+			[ "${deps}" ] &&
+			for pkg_deps in ${deps}
 			do
 				./neko pkg "${pkg_deps}"
 			done
@@ -449,7 +458,7 @@ case "${1}" in
 			if
 				neko_build "${arg}"
 			then
-				neko_msg success "Successfully built ${arg}"
+				[ "${build_style}" != "meta" ] && neko_msg success "Successfully built ${arg}"
 			else
 				neko_msg error "Failed to build ${arg}" && exit
 			fi
