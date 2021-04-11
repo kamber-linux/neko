@@ -508,9 +508,9 @@ case "${1}" in
 		done
 		;;
 	"clean")
-		neko_msg normal "Cleaning source directory..."
+		neko_msg normal "Cleaning master directory..."
 		if
-			rm -rf "${src_dir:?}"/*
+			rm -rf "${master_dir:?}"/*
 		then
 			neko_msg success "Successfully cleaned master directory"
 		else
