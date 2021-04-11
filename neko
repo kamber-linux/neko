@@ -10,6 +10,12 @@
 # To allow while testing ${DESTDIR:?}
 DESTDIR=
 
+root_base_dir="${DESTDIR}"/usr/local/share/neko
+root_pkgs_dir="${root_base_dir}"/srcpkgs
+root_src_dir="${root_base_dir}"/src
+root_master_dir="${root_master_dir}"/master
+root_license_dir="${root_base_dir}"/licenses
+
 base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
 pkgs_dir="${base_dir}"/srcpkgs
 src_dir="${base_dir}"/src
@@ -184,13 +190,14 @@ neko_init()
 {
 	for dir in "${base_dir}" "${pkgs_dir}" "${src_dir}" "${master_dir}" "${licenses_dir}"
 	do
-		[ ! -d "${dir}" ] && neko_msg normal "Making dir ${dir}..." && if
-		mkdir -p "${dir}"
-	then
-		neko_msg success "Successfully made dir ${dir}"
-	else
-		neko_msg error "Failed to make dir ${dir}" && exit
-		fi
+		[ ! -d "${dir}" ] && neko_msg normal "Making dir ${dir}..." &&
+			if
+				mkdir -p "${dir}"
+			then
+				neko_msg success "Successfully made dir ${dir}"
+			else
+				neko_msg error "Failed to make dir ${dir}" && exit
+			fi
 	done
 	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
 	if
@@ -225,15 +232,27 @@ neko_zap()
 
 neko_prepare()
 {
-	[ ! -d "${pkgs_dir}" ] && neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${master_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${src_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${licenses_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -f "${pkgs_dir}"/"${1}"/template ] && neko_msg error "No template found for ${1}" && exit
-	. "${pkgs_dir}"/"${1}"/template
+	[ ! -d "${pkgs_dir}" ] && [ ! -d "${root_pkgs_dir}" ] && neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${master_dir}" ] && [ ! -d "${root_master_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${src_dir}" ] && [ ! -d "${root_src_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${licenses_dir}" ] && [ ! -d "${root_license_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	if [ -f "${pkgs_dir}"/"${1}"/template ]
+	then
+		template_file="${pkgs_dir}"/"${1}"/template
+		patches_dir="${pkgs_dir}"/"${1}"/patches
+		files_dir="${pkgs_dir}"/"${1}"/files
+		source_dir="${src_dir}"
+	elif [ -f "${root_pkgs_dir}" ]
+	then
+		template_file="${root_pkgs_dir}"/"${1}"/template
+		patches_dir="${root_pkgs_dir}"/"${1}"/patches
+		files_dir="${root_pkgs_dir}"/"${1}"/files
+		course_dir="${root_src_dir}"
+	else
+		neko_msg error "No template found for ${1}" && exit
+	fi
+	. "${template_file}"
 	[ "${build_style}" != "meta" ] && neko_msg normal "Preparing environment..."
-	patches_dir="${pkgs_dir}"/"${1}"/patches
-	files_dir="${pkgs_dir}"/"${1}"/files
 	if [ "${distfiles}" ]
 	then
 		wrksrc="${pkgname}"-"${version}"
@@ -250,16 +269,16 @@ neko_prepare()
 		export CC=tcc
 	fi
 	# Allow override of wrksrc and archive
-	. "${pkgs_dir}"/"${1}"/template
-	# Remove duplicate wrksrc
-	[ -d "${src_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${src_dir:?}"/"${wrksrc:?}"
-	# Remove duplicate archive
-	[ "${distfiles}" ] && [ -e "${src_dir}"/"${archive}" ] && [ "${build_style}" != "meta" ] && rm -rf "${src_dir:?}"/"${archive:?}"
+	. "${template_file}"
 }
 
 neko_fetch()
 {
-	cd "${src_dir}" || exit
+	# Remove duplicate wrksrc
+	[ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${wrksrc:?}"
+	# Remove duplicate archive
+	[ "${distfiles}" ] && [ -f "${source_dir}"/"${archive}" ] && [ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${archive:?}"
+	cd "${source_dir}" || exit
 	[ "${build_style}" = "meta" ] && return
 	neko_msg normal "Downloading source for ${1}..."
 	if [ "${distfiles}" ]
@@ -289,14 +308,15 @@ neko_extract()
 {
 	[ "${build_style}" = "meta" ] && return
 	[ "${distfiles}" ] && neko_msg normal "Extracting distfiles for ${1}..."
-	[ "${distfiles}" ] && case "${archive##*.}" in
-	"gz" | "tgz")
-		tar -zxvf "${archive}"
-		;;
-	"bz2" | "xz")
-		tar -xvf "${archive}"
-		;; 
-esac
+	[ "${distfiles}" ] &&
+		case "${archive##*.}" in
+			"gz" | "tgz")
+				tar -zxvf "${archive}"
+				;;
+			"bz2" | "xz")
+				tar -xvf "${archive}"
+				;; 
+		esac
 	cd "${wrksrc}" || exit
 }
 
@@ -444,32 +464,46 @@ case "${1}" in
 		shift 1
 		for arg
 		do
-			neko_prepare "${arg}"
-			[ "${deps}" ] &&
-			for pkg_deps in ${deps}
-			do
-				./neko pkg "${pkg_deps}"
-			done
-			for step in fetch extract patch
-			do
-				neko_"${step}" "${arg}"
-			done
-			[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
 			if
-				neko_build "${arg}"
+				neko_prepare "${arg}"
+				[ "${deps}" ] &&
+					for pkg_deps in ${deps}
+					do
+						./neko pkg "${pkg_deps}"
+					done
+				for step in fetch extract patch
+				do
+					neko_"${step}" "${arg}"
+				done
+				[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
+				if
+					neko_build "${arg}"
+				then
+					[ "${build_style}" != "meta" ] && neko_msg success "Successfully built ${arg}"
+				else
+					neko_msg error "Failed to build ${arg}" && exit
+				fi
+				export DESTDIR="${master_dir}"
+				neko_msg normal "Installing ${arg}..."
+				if
+					neko_install "${arg}"
+				then
+					neko_msg success "Successfully installed ${arg}"
+				else
+					neko_msg error "Failed to install ${arg}" && exit
+				fi
+				neko_msg normal "Uninstalling ${arg}..."
+				if
+					neko_uninstall "${arg}"
+				then
+					neko_msg success "Successfully uninstalled ${arg}"
+				else
+					neko_msg error "Failed to uninstall ${arg}" && exit
+				fi
 			then
-				[ "${build_style}" != "meta" ] && neko_msg success "Successfully built ${arg}"
+				neko_msg success "${arg} is able to be packaged"
 			else
-				neko_msg error "Failed to build ${arg}" && exit
-			fi
-			export DESTDIR="${master_dir}"
-			neko_msg normal "Installing ${arg}..."
-			if
-				neko_install "${arg}"
-			then
-				neko_msg success "Successfully installed ${arg}"
-			else
-				neko_msg error "Failed to install ${arg}"
+				neko_msg error "${arg} is not able to be packaged" && exit
 			fi
 		done
 		;;
@@ -488,7 +522,13 @@ case "${1}" in
 		shift 1
 		for arg
 		do
-			for step in prepare fetch extract patch
+			neko_prepare "${arg}"
+			[ "${deps}" ] &&
+				for pkg_deps in ${deps}
+				do
+					./neko em "${pkg_deps}"
+				done
+			for step in fetch extract patch
 			do
 				neko_"${step}" "${arg}"
 			done
@@ -516,16 +556,28 @@ case "${1}" in
 		shift 1
 		for arg
 		do
-			for step in prepare fetch extract patch
-			do
-				neko_"${step}" "${arg}"
-			done
-			if
-				neko_uninstall "${arg}"
+			neko_prepare "${arg}"
+			if [ -d "${wrksrc}" ]
 			then
-				neko_msg success "Successfully uninstalled ${arg}"
+				if
+					neko_uninstall "${arg}"
+				then
+					neko_msg success "Successfully uninstalled ${2}"
+				else
+					neko_msg error "Failed to uninstall ${arg}" && exit
+				fi
 			else
-				neko_msg error "Failed to uninstall ${arg}"
+				for step in fetch extract patch
+				do
+					neko_"${step}" "${arg}"
+				done
+				if
+					neko_uninstall "${arg}"
+				then
+					neko_msg success "Successfully uninstalled ${arg}"
+				else
+					neko_msg error "Failed to uninstall ${arg}" && exit
+				fi
 			fi
 		done
 		;;
