@@ -2,6 +2,11 @@
 `neko` is a WIP package manager written in POSIX shell script and (mostly) POSIX utilities inspired by VOID's `xbps-src` bash script package builder and Gentoo's portage source-based package manager. The command usage and name is inspired by Ataraxia's package manager of the same name (it means "cat" in Japanese 猫). The end goal is to write a package manager using POSIX shell and standard POSIX utilities found in userspaces such as suckless's sbase, GNU's Core Utils, among others (e.g. `id`, `sed`, `cut`, etc). The vision is to make it easy to write templates for like in `xbps-src` and have source based installations like portage from Gentoo.
 # Installation
 The `makefile` is really more for testing as this is not complete / able to be used, yet. With that in mind, the `install` rule will install the script and man page - `make install`.
+## Dependencies
+* POSIX shell (e.g. dash, mksh, bash, zsh)
+* POSIX utilities (e.g. cd, ln, mkdir, etc)
+* GNU wget
+* GNU tar
 # Usage
 Start with copying the included templates to the directory where builds are done - `./neko init`. Then, try building one of the packages - `./neko pkg <pkg-name>`.
 # Packages

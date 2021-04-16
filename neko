@@ -24,12 +24,6 @@ licenses_dir="${base_dir}"/licenses
 
 trap interrupt 2
 
-interrupt()
-{
-	printf "\n\033[1m=> \033[31mneko:\033[0m Command interrupted\n"
-	exit 1
-}
-
 neko_msg()
 {
 	case "${1}" in
@@ -38,6 +32,49 @@ neko_msg()
 		"warning") echo "\033[1m=> \033[33mneko:\033[0m ${2}" ;;
 		"error") echo "\033[1m=> \033[31mneko:\033[0m ${2}" ;;
 	esac
+}
+
+usage()
+{
+	cat << _EOF
+[1musage[0m
+neko [command] <target>
+
+[1mcommand[0m:
+init
+	Initializes the environment for use with the templates - must be run before
+	packaging from templates.
+pkg
+	Checks to see if the <target> can be properly packaged from the template.
+em | emerge
+	Emerges the <target>. Will build and install it to the system.
+uninstall
+	Will uninstall <target> to the system.
+find
+	Will search for the <target>
+clean
+	Cleans up the master directory.
+zap
+	Will remove everything from the neko directory - you must run neko init
+	after doing so.
+help
+	Displays this message
+
+[1mstatus[0m:
+Neko will have different colors depending on the status:
+$(neko_msg normal "This is a normal message.")
+$(neko_msg success "This is a successful message.")
+$(neko_msg warning "This is a warning message.")
+$(neko_msg error "This is an error message.")
+_EOF
+}
+
+interrupt()
+{
+	# to start on a new line
+	printf "%s\n" ""
+	neko_msg error "Command interrupted"
+	exit 1
 }
 
 neko_pkg()
@@ -252,7 +289,6 @@ neko_prepare()
 		neko_msg error "No template found for ${1}" && exit
 	fi
 	. "${template_file}"
-	[ "${build_style}" != "meta" ] && neko_msg normal "Preparing environment..."
 	if [ "${distfiles}" ]
 	then
 		wrksrc="${pkgname}"-"${version}"
@@ -394,6 +430,9 @@ neko_build()
 			meson build
 			ninja -C build
 			;;
+		"haskell-cabal")
+			:
+			;;
 	esac
 }
 
@@ -415,6 +454,10 @@ neko_install()
 		"meson")
 			ninja -C build install
 			;;
+		"haskell-cabal")
+			cabal update
+			cabal install
+			;;
 	esac
 }
 
@@ -432,6 +475,7 @@ neko_license()
 				mkdir -p "${DESTDIR}"/usr/local/share/licenses
 				cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
 				chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
+				ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
 				;;
 			*)
 				:
@@ -450,7 +494,11 @@ neko_uninstall()
 		"gnu-makefile" | "gnu-configure")
 			make uninstall
 			;;
+		"haskell-cabal")
+			cabal uninstall
+			;;
 	esac
+	rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
 }
 
 case "${1}" in
@@ -466,27 +514,31 @@ case "${1}" in
 		do
 			if
 				neko_prepare "${arg}"
+				[ "${build_style}" = "meta" ] || neko_msg normal "Preparing environment..."
 				[ "${deps}" ] &&
-					for pkg_deps in ${deps}
+					for pkg_dep in ${deps}
 					do
-						./neko pkg "${pkg_deps}"
+						./neko pkg "${pkg_dep}"
 					done
 				for step in fetch extract patch
 				do
 					neko_"${step}" "${arg}"
 				done
-				[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
-				if
-					neko_build "${arg}"
-				then
-					[ "${build_style}" != "meta" ] && neko_msg success "Successfully built ${arg}"
-				else
-					neko_msg error "Failed to build ${arg}" && exit
-				fi
+				[ "${build_style}" = "meta" ] || neko_msg normal "Building ${arg}..." &&
+					if
+						do_build "${arg}" 2> /dev/null || neko_build "${arg}"
+						unset -f do_build
+					then
+						neko_msg success "Successfully built ${arg}"
+					else
+						neko_msg error "Failed to build ${arg}" && exit
+					fi
 				export DESTDIR="${master_dir}"
 				neko_msg normal "Installing ${arg}..."
 				if
-					neko_install "${arg}"
+					do_install "${arg}" 2> /dev/null || neko_install "${arg}"
+					unset -f do_install
+					neko_license
 				then
 					neko_msg success "Successfully installed ${arg}"
 				else
@@ -494,7 +546,8 @@ case "${1}" in
 				fi
 				neko_msg normal "Uninstalling ${arg}..."
 				if
-					neko_uninstall "${arg}"
+					do_uninstall "${arg}" 2> /dev/null || neko_uninstall "${arg}"
+					unset -f do_uninstall
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
@@ -589,6 +642,7 @@ case "${1}" in
 			{
 			echo "pkgname=\"${2}\""
 			echo "version=\"1.0\""
+			echo "revision=\"1\""
 			echo "distfiles=\"url.to/source-\${version}.tar.gz\""
 			echo "build_style=\"makefile\""
 			echo "license=\"GPL-3.0-or-later\""
@@ -603,9 +657,8 @@ case "${1}" in
 		shift 1
 		for arg
 		do
-			[ "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l)" = "0" ] && neko_msg normal "0 result(s) found for ${arg}" && exit
 			neko_msg normal "$(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l) result(s) found for ${arg}"
-			for pkg_found in $(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -L1 basename)
+			for pkg_found in $(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -L1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
 				[ "${distfiles}" ] && [ "${version}" ] && echo "\033[1m${pkg_found}-${version}_${revision}\033[0m"
@@ -616,6 +669,10 @@ case "${1}" in
 			done
 		done
 		;;
+	"help")
+		usage
+		;;
 	*)
 		neko_msg error "Unknown option ${1}"
+		neko_msg normal "Use neko help"
 esac
