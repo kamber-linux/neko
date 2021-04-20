@@ -1,4 +1,4 @@
-pkgname="neko"
+pkgname="neko-git"
 giturl="https://github.com/kawaiiamber/neko.git"
 revision="1"
 build_style="makefile"

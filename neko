@@ -353,6 +353,31 @@ neko_extract()
 				tar -xvf "${archive}"
 				;; 
 		esac
+	# Testing for replacing GNU tar with dd and od commands
+	case "$(od -N 2 -t x2 "${archive}" | head -n 1 | cut -d' ' -f2)" in
+		"8b1f")
+			neko_msg normal "${archive} is a gzip archive"
+			case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
+				"08")
+					neko_msg normal "Compression method: deflate"
+					;;
+				*)
+					neko_msg error "Compression method: unknown"
+					;;
+			esac
+			case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
+				"03")
+					neko_msg normal "Made on: unix system"
+					;;
+				*)
+					neko_msg normal "Made on: unknown"
+					;;
+			esac
+			;;
+		*)
+			neko_msg error "${archive} is an unknown archive"
+			;;
+	esac
 	cd "${wrksrc}" || exit
 }
 
@@ -459,31 +484,33 @@ neko_install()
 			cabal install
 			;;
 	esac
-}
-
-neko_license()
-{
 	for pkg_license in ${license}
 	do
-		case "${pkg_license}" in
-			"MIT" | "BSD-3-Clause" | "custom")
-				mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-				cp -r "${license_file}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-				chmod 644 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${license_file}"
-				;;
-			"GPL-3.0-only" | "GPL-3.0-or-later")
-				mkdir -p "${DESTDIR}"/usr/local/share/licenses
-				cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
-				chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
-				ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-				;;
-			*)
-				:
-				;;
-		esac
+		neko_msg normal "Installing license for ${pkgname}..."
+		if
+			case "${pkg_license}" in
+				"MIT" | "BSD-3-Clause" | "custom")
+					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+					cp -r "${license_file}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+					chmod 644 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"$(basename "${license_file}")"
+					;;
+				"GPL-3.0-only" | "GPL-3.0-or-later")
+					mkdir -p "${DESTDIR}"/usr/local/share/licenses
+					cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
+					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
+					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+					;;
+				*)
+					:
+					;;
+			esac
+		then
+			neko_msg success "Successfully installed license for ${pkgname}"
+		else
+			neko_msg error "Failed to install license for ${pkgname}" && exit
+		fi
 	done
 }
-
 
 neko_uninstall()
 {
@@ -498,7 +525,13 @@ neko_uninstall()
 			cabal uninstall
 			;;
 	esac
-	rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
+	if
+		rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
+	then
+		neko_msg success "Successfully removed license for ${pkgname}"
+	else
+		neko_msg error "Failed to remove license for ${pkgname}" && exit
+	fi
 }
 
 case "${1}" in
@@ -526,8 +559,13 @@ case "${1}" in
 				done
 				[ "${build_style}" = "meta" ] || neko_msg normal "Building ${arg}..." &&
 					if
-						do_build "${arg}" 2> /dev/null || neko_build "${arg}"
-						unset -f do_build
+						if [ -n "$(command -v do_build)" ]
+						then
+							do_build "${arg}"
+							unset -f do_build
+						else
+							neko_build "${arg}"
+						fi
 					then
 						neko_msg success "Successfully built ${arg}"
 					else
@@ -536,9 +574,13 @@ case "${1}" in
 				export DESTDIR="${master_dir}"
 				neko_msg normal "Installing ${arg}..."
 				if
-					do_install "${arg}" 2> /dev/null || neko_install "${arg}"
-					unset -f do_install
-					neko_license
+					if [ -n "$(command -v do_install)" ]
+					then
+						do_install "${arg}"
+						unset -f do_install
+					else
+						neko_install "${arg}"
+					fi
 				then
 					neko_msg success "Successfully installed ${arg}"
 				else
@@ -546,8 +588,13 @@ case "${1}" in
 				fi
 				neko_msg normal "Uninstalling ${arg}..."
 				if
-					do_uninstall "${arg}" 2> /dev/null || neko_uninstall "${arg}"
-					unset -f do_uninstall
+					if [ -n "$(command -v do_uninstall)" ]
+					then
+						do_uninstall "${arg}"
+						unset -f do_uninstall
+					else
+						neko_uninstall "${arg}"
+					fi
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
@@ -587,7 +634,13 @@ case "${1}" in
 			done
 			[ "${build_style}" != "meta" ] && neko_msg normal "Building ${arg}..."
 			if
-				neko_build "${arg}"
+				if [ -n "$(command -v do_build)" ]
+				then
+					do_build "${arg}"
+					unset -f do_build
+				else
+					neko_build "${arg}"
+				fi
 			then
 				neko_msg success "Successfully built ${arg}"
 			else
@@ -595,8 +648,13 @@ case "${1}" in
 			fi
 			neko_msg normal "Installing ${arg}..."
 			if
-				neko_install "${arg}"
-				neko_license
+				if [ -n "$(command -v do_install)" ]
+				then
+					do_install "${arg}"
+					unset -f do_install
+				else
+					neko_install "${arg}"
+				fi
 			then
 				neko_msg success "Successfully installed ${arg}"
 			else
@@ -613,7 +671,13 @@ case "${1}" in
 			if [ -d "${wrksrc}" ]
 			then
 				if
-					neko_uninstall "${arg}"
+					if [ -n "$(command -v do_uninstall)" ]
+					then
+						do_uninstall "${arg}"
+						unset -f do_uninstall
+					else
+						neko_uninstall "${arg}"
+					fi
 				then
 					neko_msg success "Successfully uninstalled ${2}"
 				else
@@ -625,7 +689,13 @@ case "${1}" in
 					neko_"${step}" "${arg}"
 				done
 				if
-					neko_uninstall "${arg}"
+					if [ -n "$(command -v do_uninstall)" ]
+					then
+						do_uninstall "${arg}"
+						unset -f do_uninstall
+					else
+						neko_uninstall "${arg}"
+					fi
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
