@@ -61,14 +61,14 @@ revision="1"
 distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
 build_style="makefile"
 
-neko_install()
+do_install()
 {
 	neko_pkg install bin build/brssl
 	neko_pkg install lib libbearssl.so
 	neko_pkg install lib libbearssl.a
 }
 
-neko_uninstall()
+do_uninstall()
 {
 	neko_pkg uninstall bin brssl
 	neko_pkg uninstall lib libbearssl.so
@@ -102,12 +102,12 @@ wrksrc="mksh"
 license="custom"
 license_file="${files_dir}/TaC-mksh.txt"
 
-neko_build()
+do_build()
 {
 	sh ./Build.sh -r
 }
 
-neko_install()
+do_install()
 {
 	neko_pkg install bin mksh
 	neko_pkg install man mksh.1
@@ -115,7 +115,7 @@ neko_install()
 	neko_pkg install conf .mkshrc /skel
 }
 
-neko_uninstall()
+do_uninstall()
 {
 	neko_pkg uninstall bin mksh
 	neko_pkg uninstall man mksh.1
