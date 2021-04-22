@@ -345,14 +345,20 @@ neko_extract()
 	[ "${build_style}" = "meta" ] && return
 	[ "${distfiles}" ] && neko_msg normal "Extracting distfiles for ${1}..."
 	[ "${distfiles}" ] &&
-		case "${archive##*.}" in
-			"gz" | "tgz")
-				tar -zxvf "${archive}"
-				;;
-			"bz2" | "xz")
-				tar -xvf "${archive}"
-				;; 
-		esac
+		if
+			case "${archive##*.}" in
+				"gz" | "tgz")
+					tar -zxvf "${archive}"
+					;;
+				"bz2" | "xz")
+					tar -xvf "${archive}"
+					;; 
+			esac
+		then
+			neko_msg success "Successfully extracted distfiles for ${pkgname}"
+		else
+			neko_msg error "Failed to extract distfiles for ${pkgname}" && exit
+		fi
 	# Testing for replacing GNU tar with dd and od commands
 	case "$(od -N 2 -t x2 "${archive}" | head -n 1 | cut -d' ' -f2)" in
 		"8b1f")
@@ -373,6 +379,9 @@ neko_extract()
 					neko_msg normal "Made on: unknown"
 					;;
 			esac
+			;;
+		"4B50")
+			neko_msg normal "${archive} is a zip archive"
 			;;
 		*)
 			neko_msg error "${archive} is an unknown archive"
@@ -484,9 +493,13 @@ neko_install()
 			cabal install
 			;;
 	esac
+}
+
+neko_license_install()
+{
 	for pkg_license in ${license}
 	do
-		neko_msg normal "Installing license for ${pkgname}..."
+		neko_msg normal "Installing ${pkg_license} license for ${pkgname}..."
 		if
 			case "${pkg_license}" in
 				"MIT" | "BSD-3-Clause" | "custom")
@@ -495,19 +508,26 @@ neko_install()
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"$(basename "${license_file}")"
 					;;
 				"GPL-3.0-only" | "GPL-3.0-or-later")
-					mkdir -p "${DESTDIR}"/usr/local/share/licenses
+					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
 					cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
-					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
+					;;
+				"GPL-2.0-only" | "GPL-2.0-or-later")
+					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+					cp -r "${licenses_dir}"/GPL-2 "${DESTDIR}"/usr/local/share/licenses
+					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-2
+					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-2 "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				*)
 					:
 					;;
 			esac
 		then
-			neko_msg success "Successfully installed license for ${pkgname}"
+			neko_msg success "Successfully installed ${pkg_license} license for ${pkgname}"
+			neko_msg success "The ${pkg_license} license for ${pkgname} can be found in ${DESTDIR}/usr/local/share/licenses/${pkgname}"
 		else
-			neko_msg error "Failed to install license for ${pkgname}" && exit
+			neko_msg error "Failed to install ${pkg_license} license for ${pkgname}" && exit
 		fi
 	done
 }
@@ -525,13 +545,20 @@ neko_uninstall()
 			cabal uninstall
 			;;
 	esac
-	if
-		rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
-	then
-		neko_msg success "Successfully removed license for ${pkgname}"
-	else
-		neko_msg error "Failed to remove license for ${pkgname}" && exit
-	fi
+}
+
+neko_license_uninstall()
+{
+	for pkg_license in ${license}
+	do
+		if
+			rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
+		then
+			neko_msg success "Successfully removed ${pkg_license} license for ${pkgname}"
+		else
+			neko_msg error "Failed to remove ${pkg_license} license for ${pkgname}" && exit
+		fi
+	done
 }
 
 case "${1}" in
@@ -551,7 +578,12 @@ case "${1}" in
 				[ "${deps}" ] &&
 					for pkg_dep in ${deps}
 					do
-						./neko pkg "${pkg_dep}"
+						if [ -n "$(command -v neko)" ]
+						then
+							neko pkg "${pkg_dep}"
+						else
+							./neko pkg "${pkg_dep}"
+						fi
 					done
 				for step in fetch extract patch
 				do
@@ -581,6 +613,7 @@ case "${1}" in
 					else
 						neko_install "${arg}"
 					fi
+					neko_license_install
 				then
 					neko_msg success "Successfully installed ${arg}"
 				else
@@ -595,6 +628,7 @@ case "${1}" in
 					else
 						neko_uninstall "${arg}"
 					fi
+					neko_license_uninstall
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
@@ -626,7 +660,12 @@ case "${1}" in
 			[ "${deps}" ] &&
 				for pkg_deps in ${deps}
 				do
-					./neko em "${pkg_deps}"
+					if [ -n "$(command -v neko)" ]
+					then
+						neko em "${pkg_dep}"
+					else
+						./neko em "${pkg_dep}"
+					fi
 				done
 			for step in fetch extract patch
 			do
@@ -655,6 +694,7 @@ case "${1}" in
 				else
 					neko_install "${arg}"
 				fi
+				neko_license_install
 			then
 				neko_msg success "Successfully installed ${arg}"
 			else
@@ -670,6 +710,7 @@ case "${1}" in
 			neko_prepare "${arg}"
 			if [ -d "${wrksrc}" ]
 			then
+				neko_msg normal "Uninstalling ${arg}"
 				if
 					if [ -n "$(command -v do_uninstall)" ]
 					then
@@ -678,6 +719,7 @@ case "${1}" in
 					else
 						neko_uninstall "${arg}"
 					fi
+					neko_license_uninstall
 				then
 					neko_msg success "Successfully uninstalled ${2}"
 				else
@@ -696,6 +738,7 @@ case "${1}" in
 					else
 						neko_uninstall "${arg}"
 					fi
+					neko_license_uninstall
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
@@ -731,9 +774,12 @@ case "${1}" in
 			for pkg_found in $(find  "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -L1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
-				[ "${distfiles}" ] && [ "${version}" ] && echo "\033[1m${pkg_found}-${version}_${revision}\033[0m"
-				[ "${build_style}" = "meta" ] && echo "\033[1m${pkg_found}_${revision}\033[0m"
-				[ "${giturl}" ] && echo "\033[1m${pkg_found}\033[0m"
+				[ "${distfiles}" ] && [ "${version}" ] &&
+					printf "%30s\t%s\n" "[1m${pkg_found}-${version}_${revision}[0m" "${license}"
+				[ "${build_style}" = "meta" ] &&
+					printf "%30s\t%s\n" "[1m${pkg_found}_${revision}[0m" "${license}"
+				[ "${giturl}" ] &&
+					printf "%30s\t%s\n" "[1m${pkg_found}[0m" "${license}"
 				unset version
 				unset giturl
 			done

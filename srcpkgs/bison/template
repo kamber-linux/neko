@@ -1,5 +1,5 @@
 pkgname="bison"
-version="3.7"
+version="3.7.6"
 revision="1"
 distfiles="https://ftp.gnu.org/gnu/bison/bison-${version}.tar.gz"
 build_style="configure"
