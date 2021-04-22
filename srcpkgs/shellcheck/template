@@ -1,0 +1,6 @@
+pkgname="shellcheck"
+version="0.7.1"
+revision="1"
+distfiles="https://github.com/koalaman/shellcheck/archive/refs/tags/v${version}.tar.gz"
+build_style="haskell-cabal"
+license="GPL-3.0-or-later"

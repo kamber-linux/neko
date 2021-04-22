@@ -1,0 +1,9 @@
+--- a/config.mk	2021-04-15 22:24:53.305965537 -0600
++++ b/config.mk	2021-04-15 22:25:20.118965236 -0600
+@@ -9,5 +9,5 @@
+ #CC       = musl-gcc
+ LD        = $(CC)
+ CPPFLAGS  = -D_BSD_SOURCE
+-CFLAGS    = -g -Wall -Wextra -O0 -ansi $(CPPFLAGS)
++CFLAGS    = -g -Wall -Wextra -O0 $(CPPFLAGS)
+ LDFLAGS   = -g

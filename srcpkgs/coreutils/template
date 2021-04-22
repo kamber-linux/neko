@@ -1,4 +1,4 @@
 pkgname="coreutils"
-deps="sbase-git ubase"
+deps="sbase-git ubase awk"
 revision="1"
 build_style="meta"
