@@ -595,6 +595,7 @@ neko_license_uninstall()
 {
 	for pkg_license in ${license}
 	do
+		neko_msg normal "Uninstalling ${pkg_license} license for ${pkgname}..."
 		if
 			rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
 		then
