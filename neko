@@ -92,6 +92,7 @@ neko_pkg()
 						echo "Successfully installed ${3}"
 					else
 						echo "Failed to install ${3}"
+						exit
 					fi
 					;;
 				"man")
@@ -104,6 +105,7 @@ neko_pkg()
 						echo "Successfully installed ${3}"
 					else
 						echo "Failed to install ${3}"
+						exit
 					fi
 					;;
 				"lib")
@@ -116,6 +118,7 @@ neko_pkg()
 						echo "Successfully installed ${3}"
 					else
 						echo "Failed to install ${3}"
+						exit
 					fi
 					;;
 				"inc")
@@ -128,6 +131,7 @@ neko_pkg()
 						echo "Successfully installed ${3}"
 					else
 						echo "Failed to install ${3}"
+						exit
 					fi
 					;;
 				"conf")
@@ -140,6 +144,7 @@ neko_pkg()
 						echo "Successfully installed ${3}"
 					else
 						echo "Failed to install ${3}"
+						exit
 					fi
 					;;
 				"file")
@@ -152,6 +157,7 @@ neko_pkg()
 						echo "Successfully installed ${4}"
 					else
 						echo "Failed to install ${4}"
+						exit
 					fi
 					;;
 			esac
@@ -166,6 +172,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 				"man")
@@ -176,6 +183,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 				"lib")
@@ -186,6 +194,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 				"inc")
@@ -196,6 +205,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 				"conf")
@@ -206,6 +216,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 				"file")
@@ -216,6 +227,7 @@ neko_pkg()
 						echo "Successfully uninstalled ${3}"
 					else
 						echo "Failed to uninstall ${3}"
+						exit
 					fi
 					;;
 			esac
@@ -233,7 +245,8 @@ neko_init()
 			then
 				neko_msg success "Successfully made dir ${dir}"
 			else
-				neko_msg error "Failed to make dir ${dir}" && exit
+				neko_msg error "Failed to make dir ${dir}"
+				exit
 			fi
 	done
 	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
@@ -242,7 +255,8 @@ neko_init()
 	then
 		neko_msg success "Successfully copied base srcpkgs to ${base_dir}"
 	else
-		neko_msg error "Failed to copy base srcpkgs to ${base_dir}" && exit
+		neko_msg error "Failed to copy base srcpkgs to ${base_dir}"
+		exit
 	fi
 	neko_msg normal "Copying licenses to ${base_dir}..."
 	if
@@ -250,7 +264,8 @@ neko_init()
 	then
 		neko_msg success "Successfully copied licenses to ${base_dir}"
 	else
-		neko_msg error "Failed to copy licenses to ${base_dir}..." && exit
+		neko_msg error "Failed to copy licenses to ${base_dir}..."
+		exit
 	fi
 }
 
@@ -262,31 +277,49 @@ neko_zap()
 	then
 		neko_msg success "Successfully zapped neko directory"
 	else
-		neko_msg error "Failed to zap neko directory" && exit
+		neko_msg error "Failed to zap neko directory"
+		exit
 	fi
 
 }
 
 neko_prepare()
 {
-	[ ! -d "${pkgs_dir}" ] && [ ! -d "${root_pkgs_dir}" ] && neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${master_dir}" ] && [ ! -d "${root_master_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${src_dir}" ] && [ ! -d "${root_src_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
-	[ ! -d "${licenses_dir}" ] && [ ! -d "${root_license_dir}" ] && neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init" && exit
+	[ ! -d "${pkgs_dir}" ] && [ ! -d "${root_pkgs_dir}" ] &&
+		{
+			neko_msg error "No base srcpkgs found in ${base_dir}" && neko_msg normal "Run neko init"
+			exit
+		}
+	[ ! -d "${master_dir}" ] && [ ! -d "${root_master_dir}" ] &&
+		{
+			neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init"
+			exit
+		}
+	[ ! -d "${src_dir}" ] && [ ! -d "${root_src_dir}" ] &&
+		{
+			neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init"
+			exit
+		}
+	[ ! -d "${licenses_dir}" ] && [ ! -d "${root_license_dir}" ] &&
+		{
+			neko_msg error "No master dir found in ${base_dir}" && neko_msg normal "Run neko init"
+			exit
+		}
 	if [ -f "${pkgs_dir}"/"${1}"/template ]
 	then
 		template_file="${pkgs_dir}"/"${1}"/template
 		patches_dir="${pkgs_dir}"/"${1}"/patches
 		files_dir="${pkgs_dir}"/"${1}"/files
 		source_dir="${src_dir}"
-	elif [ -f "${root_pkgs_dir}" ]
+	elif [ -f "${root_pkgs_dir}"/"${1}"/template ]
 	then
 		template_file="${root_pkgs_dir}"/"${1}"/template
 		patches_dir="${root_pkgs_dir}"/"${1}"/patches
 		files_dir="${root_pkgs_dir}"/"${1}"/files
 		course_dir="${root_src_dir}"
 	else
-		neko_msg error "No template found for ${1}" && exit
+		neko_msg error "No template found for ${1}"
+		exit
 	fi
 	. "${template_file}"
 	if [ "${distfiles}" ]
@@ -311,9 +344,11 @@ neko_prepare()
 neko_fetch()
 {
 	# Remove duplicate wrksrc
-	[ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${wrksrc:?}"
+	[ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] &&
+		rm -rf "${source_dir:?}"/"${wrksrc:?}"
 	# Remove duplicate archive
-	[ "${distfiles}" ] && [ -f "${source_dir}"/"${archive}" ] && [ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${archive:?}"
+	[ "${distfiles}" ] && [ -f "${source_dir}"/"${archive}" ] &&
+		[ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${archive:?}"
 	cd "${source_dir}" || exit
 	[ "${build_style}" = "meta" ] && return
 	neko_msg normal "Downloading source for ${1}..."
@@ -324,7 +359,8 @@ neko_fetch()
 		then
 			neko_msg success "Successfully fetched distfiles for ${1}"
 		else
-			neko_msg error "Failed to fetch distfiles for ${1}" && exit
+			neko_msg error "Failed to fetch distfiles for ${1}"
+			exit
 		fi
 	elif [ "${giturl}" ]
 	then
@@ -333,10 +369,15 @@ neko_fetch()
 		then
 			neko_msg success "Successfully cloned git repo for ${1}"
 		else
-			neko_msg error "Failed to clone git repo for ${1}" && exit
+			neko_msg error "Failed to clone git repo for ${1}"
+			exit
 		fi
 	else
-		[ "${build_style}" != "meta" ] && neko_msg error "No distfiles or giturl specified"
+		[ "${build_style}" != "meta" ] &&
+			{
+				neko_msg error "No distfiles or giturl specified"
+				exit
+			}
 	fi
 }
 
@@ -357,7 +398,8 @@ neko_extract()
 		then
 			neko_msg success "Successfully extracted distfiles for ${pkgname}"
 		else
-			neko_msg error "Failed to extract distfiles for ${pkgname}" && exit
+			neko_msg error "Failed to extract distfiles for ${pkgname}"
+			exit
 		fi
 	# Testing for replacing GNU tar with dd and od commands
 	case "$(od -N 2 -t x2 "${archive}" | head -n 1 | cut -d' ' -f2)" in
@@ -403,7 +445,8 @@ neko_patch()
 			then
 				neko_msg normal "Successfully applied patch ${patch##*/}"
 			else
-				neko_msg error "Failed to apply patch ${patch##*/}" && exit
+				neko_msg error "Failed to apply patch ${patch##*/}"
+				exit
 			fi
 		done
 	fi
@@ -527,7 +570,8 @@ neko_license_install()
 			neko_msg success "Successfully installed ${pkg_license} license for ${pkgname}"
 			neko_msg success "The ${pkg_license} license for ${pkgname} can be found in ${DESTDIR}/usr/local/share/licenses/${pkgname}"
 		else
-			neko_msg error "Failed to install ${pkg_license} license for ${pkgname}" && exit
+			neko_msg error "Failed to install ${pkg_license} license for ${pkgname}"
+			exit
 		fi
 	done
 }
@@ -556,7 +600,8 @@ neko_license_uninstall()
 		then
 			neko_msg success "Successfully removed ${pkg_license} license for ${pkgname}"
 		else
-			neko_msg error "Failed to remove ${pkg_license} license for ${pkgname}" && exit
+			neko_msg error "Failed to remove ${pkg_license} license for ${pkgname}"
+			exit
 		fi
 	done
 }
@@ -601,7 +646,9 @@ case "${1}" in
 					then
 						neko_msg success "Successfully built ${arg}"
 					else
-						neko_msg error "Failed to build ${arg}" && exit
+						neko_msg error "Failed to build ${arg}"
+						break
+						exit
 					fi
 				export DESTDIR="${master_dir}"
 				neko_msg normal "Installing ${arg}..."
@@ -617,7 +664,9 @@ case "${1}" in
 				then
 					neko_msg success "Successfully installed ${arg}"
 				else
-					neko_msg error "Failed to install ${arg}" && exit
+					neko_msg error "Failed to install ${arg}"
+					break
+					exit
 				fi
 				neko_msg normal "Uninstalling ${arg}..."
 				if
@@ -632,12 +681,15 @@ case "${1}" in
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
-					neko_msg error "Failed to uninstall ${arg}" && exit
+					neko_msg error "Failed to uninstall ${arg}"
+					break
+					exit
 				fi
 			then
 				neko_msg success "${arg} is able to be packaged"
 			else
-				neko_msg error "${arg} is not able to be packaged" && exit
+				neko_msg error "${arg} is not able to be packaged"
+				exit
 			fi
 		done
 		;;
@@ -648,11 +700,16 @@ case "${1}" in
 		then
 			neko_msg success "Successfully cleaned master directory"
 		else
-			neko_msg error "Failed to clean master directory" && exit
+			neko_msg error "Failed to clean master directory"
+			exit
 		fi
 		;;
 	"em" | "emerge")
-		[ "$(id -u)" != "0" ] && neko_msg error "You must have root permissions to run this command" && exit
+		[ "$(id -u)" != "0" ] &&
+			{
+				neko_msg error "You must have root permissions to run this command"
+				exit
+			}
 		shift 1
 		for arg
 		do
@@ -683,7 +740,9 @@ case "${1}" in
 			then
 				neko_msg success "Successfully built ${arg}"
 			else
-				neko_msg error "Failed to build ${arg}" && exit
+				neko_msg error "Failed to build ${arg}"
+				break
+				exit
 			fi
 			neko_msg normal "Installing ${arg}..."
 			if
@@ -698,12 +757,18 @@ case "${1}" in
 			then
 				neko_msg success "Successfully installed ${arg}"
 			else
-				neko_msg error "Failed to install ${arg}" && exit
+				neko_msg error "Failed to install ${arg}"
+				break
+				exit
 			fi
 		done
 		;;
 	"uninstall")
-		[ "$(id -u)" != "0" ] && neko_msg error "You must have root permissions to run this command" && exit
+		[ "$(id -u)" != "0" ] &&
+			{
+				neko_msg error "You must have root permissions to run this command"
+				exit
+			}
 		shift 1
 		for arg
 		do
@@ -723,7 +788,8 @@ case "${1}" in
 				then
 					neko_msg success "Successfully uninstalled ${2}"
 				else
-					neko_msg error "Failed to uninstall ${arg}" && exit
+					neko_msg error "Failed to uninstall ${arg}"
+					exit
 				fi
 			else
 				for step in fetch extract patch
@@ -742,13 +808,18 @@ case "${1}" in
 				then
 					neko_msg success "Successfully uninstalled ${arg}"
 				else
-					neko_msg error "Failed to uninstall ${arg}" && exit
+					neko_msg error "Failed to uninstall ${arg}"
+					exit
 				fi
 			fi
 		done
 		;;
 	"new")
-		[ -d "${pkgs_dir}"/"${2}" ] && neko_msg error "There's already a template for ${2}" && exit
+		[ -d "${pkgs_dir}"/"${2}" ] &&
+			{
+				neko_msg error "There's already a template for ${2}"
+				exit
+			}
 		neko_msg normal "Making a base template for ${2}..."
 		if
 			mkdir -p "${pkgs_dir}"/"${2}"
@@ -775,11 +846,11 @@ case "${1}" in
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
 				[ "${distfiles}" ] && [ "${version}" ] &&
-					printf "%30s\t%s\n" "[1m${pkg_found}-${version}_${revision}[0m" "${license}"
+					printf "%s\t%s\n" "[1m${pkg_found}-${version}_${revision}[0m" "${license}"
 				[ "${build_style}" = "meta" ] &&
-					printf "%30s\t%s\n" "[1m${pkg_found}_${revision}[0m" "${license}"
+					printf "%s\t%s\n" "[1m${pkg_found}_${revision}[0m" "${license}"
 				[ "${giturl}" ] &&
-					printf "%30s\t%s\n" "[1m${pkg_found}[0m" "${license}"
+					printf "%s\t%s\n" "[1m${pkg_found}[0m" "${license}"
 				unset version
 				unset giturl
 			done
