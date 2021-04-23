@@ -459,7 +459,7 @@ neko_build()
 			:
 			;;
 		"makefile")
-			if [ "${make_args}" ]
+			if [ "${make_build_args}" ]
 			then
 				bmake "${make_args}"
 			else
@@ -467,7 +467,7 @@ neko_build()
 			fi
 			;;
 		"gnu-makefile")
-			if [ "${make_args}" ]
+			if [ "${make_build_args}" ]
 			then
 				make "${make_args}"
 			else
@@ -481,9 +481,9 @@ neko_build()
 			else
 				./configure
 			fi
-			if [ "${make_args}" ]
+			if [ "${make_build_args}" ]
 			then
-				bmake "${make_args}"
+				bmake "${make_build_args}"
 			else
 				bmake
 			fi
@@ -495,9 +495,9 @@ neko_build()
 			else
 				./configure
 			fi
-			if [ "${make_args}" ]
+			if [ "${make_build_args}" ]
 			then
-				make "${make_args}"
+				make "${make_build_args}"
 			else
 				make
 			fi
@@ -516,17 +516,21 @@ neko_build()
 neko_install()
 {
 	case "${build_style}" in
-		"makefile")
-			bmake install
+		"makefile" | "configure")
+			if [ "${make_install_args}" ]
+			then
+				bmake "${make_install_args}" install
+			else
+				bmake install
+			fi
 			;;
-		"gnu-makefile")
-			make install
-			;;
-		"configure")
-			bmake install
-			;;
-		"gnu-configure")
-			make install
+		"gnu-makefile" | "gnu-configure")
+			if [ "${make_install_args}" ]
+			then
+				make "${make_install_args}" install
+			else
+				make install
+			fi
 			;;
 		"meson")
 			ninja -C build install
