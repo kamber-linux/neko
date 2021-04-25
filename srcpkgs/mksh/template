@@ -19,10 +19,3 @@ do_install()
 	mv dot.mkshrc .mkshrc
 	pkg_install conf .mkshrc /skel
 }
-
-do_uninstall()
-{
-	pkg_uninstall bin mksh
-	pkg_uninstall man mksh.1
-	pkg_uninstall conf skel/.mkshrc
-}

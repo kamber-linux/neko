@@ -6,3 +6,5 @@ distfiles="https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz
 wrksrc="Python-${version}"
 build_style="configure"
 TCC="false" # tcc: error: invalid option -- '-Xlinker'
+license="custom"
+license_file="LICENSE"

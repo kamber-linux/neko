@@ -76,7 +76,7 @@ interrupt()
 	exit 1
 }
 
-# pkg_install and pkg_uninstall are only used in templates
+# pkg_install are only used in templates
 pkg_install()
 {
 	case "${1}" in
@@ -264,13 +264,6 @@ neko_prepare()
 		wrksrc="$(echo "${pkgname}" | sed 's/-git//')"
 	fi
 	archive="${distfiles##*/}"
-	# Try and use TCC by default
-	if [ "${TCC}" = "false" ]
-	then
-		export CC=cc
-	else
-		export CC=tcc
-	fi
 	# Allow override of wrksrc and archive
 	. "${template_file}"
 }
@@ -360,7 +353,7 @@ neko_extract()
 			neko_msg normal "${archive} is a zip archive"
 			;;
 		*)
-			neko_msg error "${archive} is an unknown archive"
+			neko_msg normal "${archive} is an unknown archive (so far)"
 			;;
 	esac
 	cd "${wrksrc}" || exit
@@ -388,6 +381,7 @@ neko_patch()
 
 neko_build()
 {
+	export CC="${CC:-tcc}"
 	case "${build_style}" in
 		"meta")
 			:
@@ -395,17 +389,17 @@ neko_build()
 		"makefile")
 			if [ "${make_build_args}" ]
 			then
-				bmake "${make_args}"
+				bmake CC="${CC}" "${make_args}"
 			else
-				bmake
+				bmake CC="${CC}"
 			fi
 			;;
 		"gnu-makefile")
 			if [ "${make_build_args}" ]
 			then
-				make "${make_args}"
+				make CC="${CC}" "${make_build_args}"
 			else
-				make
+				make CC="${CC}"
 			fi
 			;;
 		"configure")
@@ -431,13 +425,13 @@ neko_build()
 			fi
 			if [ "${make_build_args}" ]
 			then
-				make "${make_build_args}"
+				make CC="${CC}" "${make_build_args}"
 			else
-				make
+				make CC="${CC}"
 			fi
 			;;
 		"meson")
-			export CC=cc # meson can't build with tcc compiler
+			export CC=gcc # meson can only build with gcc (eww)
 			meson build
 			ninja -C build
 			;;
@@ -657,7 +651,7 @@ case "${1}" in
 						for line in $(find "${DESTDIR}" -type f)
 						do
 							printf "%s %s\n" "$(echo "${line}" | sed "s|^${DESTDIR}||")"\
-								"$(cksum "${line}" | cut -d' ' -f1)"
+								"$(cksum "${line}" 2> /dev/null | cut -d' ' -f1)"
 						done > "${database}"/"${pkgname}"/INSTALL
 					then
 						neko_msg success "Successfully logged files into databse"

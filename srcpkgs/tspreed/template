@@ -7,7 +7,7 @@ build_style="makefile"
 license="GPL-3.0-or-later"
 
 # tspreed doesn't build
-neko_build()
+do_build()
 {
 	:
 }

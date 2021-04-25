@@ -1,0 +1,10 @@
+--- a/config.mk	2021-04-25 00:22:13.084475736 -0600
++++ b/config.mk	2021-04-25 00:22:24.915475604 -0600
+@@ -2,7 +2,6 @@
+ VERSION   = 0.1
+ 
+ PREFIX    = /usr/local
+-DESTDIR   =
+ MANPREFIX = $(PREFIX)/share/man
+ 
+ #CC       = gcc

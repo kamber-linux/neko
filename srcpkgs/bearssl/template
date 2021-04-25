@@ -14,27 +14,12 @@ do_install()
 	pkg_install lib build/libbearssl.a
 }
 
-do_uninstall()
-{
-	pkg_uninstall bin brssl
-	pkg_uninstall lib libbearssl.so
-	pkg_uninstall lib libbearssl.a
-}
-
 subpkg()
 {
 	pkgname="bearssl-devel"
+	short_desc="bearssl developement files"
 	do_install()
 	{
 		pkg_install inc inc/*
-	}
-	do_uninstall()
-	{
-		for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
-			bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
-			bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
-		do
-			pkg_uninstall inc "${file}"
-		done
 	}
 }
