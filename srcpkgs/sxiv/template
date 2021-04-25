@@ -1,4 +1,5 @@
 pkgname="sxiv"
+short_desc="Simple X Image Viewer"
 version="26"
 revision="1"
 distfiles="https://github.com/muennich/sxiv/archive/refs/tags/v${version}.tar.gz"

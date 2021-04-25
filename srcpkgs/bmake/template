@@ -1,4 +1,5 @@
 pkgname="bmake"
+short_desc="Maintain program dependencies"
 version="20210314"
 revision="1"
 distfiles="http://www.crufty.net/ftp/pub/sjg/bmake-${version}.tar.gz"

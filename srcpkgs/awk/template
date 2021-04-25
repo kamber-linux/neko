@@ -1,4 +1,5 @@
 pkgname="awk"
+short_desc="Pattern scanning and processing language"
 deps="bison"
 version="20180827"
 revision="1"

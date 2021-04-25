@@ -1,4 +1,5 @@
 pkgname="base-system"
+short_desc="Sakura linux base system"
 deps="coreutils mksh dash tcc gcc bmake make meson ninja python"
 revision="1"
 build_style="meta"

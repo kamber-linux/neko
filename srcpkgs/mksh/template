@@ -1,4 +1,5 @@
 pkgname="mksh"
+short_desc="MirBSD Korn shell"
 version="R59c"
 revision="1"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
@@ -13,15 +14,15 @@ do_build()
 
 do_install()
 {
-	neko_pkg install bin mksh
-	neko_pkg install man mksh.1
+	pkg_install bin mksh
+	pkg_install man mksh.1
 	mv dot.mkshrc .mkshrc
-	neko_pkg install conf .mkshrc /skel
+	pkg_install conf .mkshrc /skel
 }
 
 do_uninstall()
 {
-	neko_pkg uninstall bin mksh
-	neko_pkg uninstall man mksh.1
-	neko_pkg uninstall conf skel/.mkshrc
+	pkg_uninstall bin mksh
+	pkg_uninstall man mksh.1
+	pkg_uninstall conf skel/.mkshrc
 }

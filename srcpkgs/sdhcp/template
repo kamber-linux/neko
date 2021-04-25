@@ -1,4 +1,5 @@
 pkgname="sdhcp"
+short_desc="Simple dhcp client"
 version="0.1"
 revision="1"
 distfiles="http://dl.2f30.org/releases/sdhcp-${version}.tar.gz"

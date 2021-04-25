@@ -1,4 +1,5 @@
 pkgname="st"
+short_desc="Simple terminal"
 version="0.8.4"
 revision="1"
 distfiles="https://dl.suckless.org/st/st-${version}.tar.gz"

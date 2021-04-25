@@ -1,4 +1,5 @@
 pkgname="tcc"
+short_desc="Tiny C Compiler"
 version="0.9.27"
 revision="1"
 distfiles="https://download.savannah.gnu.org/releases/tinycc/tcc-${version}.tar.bz2"

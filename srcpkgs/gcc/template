@@ -1,4 +1,5 @@
 pkgname="gcc"
+short_desc="GNU project C and C++ compiler"
 version="10.2.0"
 revision="1"
 distfiles="https://ftp.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.gz"

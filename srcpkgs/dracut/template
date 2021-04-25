@@ -1,0 +1,6 @@
+pkgname="dracut"
+short_desc=""
+version="053"
+revision="1"
+distfiles="https://www.kernel.org/pub/linux/utils/boot/dracut/dracut-${version}.tar.gz"
+build_style="configure"

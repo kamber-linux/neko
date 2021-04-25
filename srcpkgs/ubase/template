@@ -1,4 +1,5 @@
 pkgname="ubase"
+short_desc="Collection of tools similar in spirit to util-linux but much simpler"
 version="0.1"
 revision="1"
 distfiles="https://dl.suckless.org/ubase/ubase-${version}.tar.gz"

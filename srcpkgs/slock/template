@@ -1,0 +1,6 @@
+pkgname="slock"
+short_desc="Simple X screen locker"
+version="1.4"
+revision="1"
+distfiles="https://dl.suckless.org/tools/slock-${version}.tar.gz"
+build_style="makefile"

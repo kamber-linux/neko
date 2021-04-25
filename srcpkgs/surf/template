@@ -1,4 +1,5 @@
 pkgname="surf"
+short_desc="Simple webkit-based browser"
 version="2.0"
 revision="1"
 distfiles="https://dl.suckless.org/surf/surf-${version}.tar.gz"

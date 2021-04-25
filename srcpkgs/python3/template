@@ -1,4 +1,5 @@
 pkgname="python3"
+short_desc="Interpreted, interactive, object-oriented programming language"
 version="3.9.2"
 revision="1"
 distfiles="https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz"

@@ -1,0 +1,13 @@
+pkgname="perl"
+short_desc="Perl 5 language interpreter"
+version="5.32.1"
+revision="1"
+distfiles="https://www.cpan.org/src/5.0/perl-${version}.tar.gz"
+build_style="gnu-configure"
+license="GPL-1.0-or-later"
+
+do_build()
+{
+	sh ./Configure
+	make
+}
