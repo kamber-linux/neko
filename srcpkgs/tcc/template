@@ -1,6 +1,8 @@
 pkgname="tcc"
+short_desc="Tiny C Compiler"
 version="0.9.27"
 revision="1"
 distfiles="https://download.savannah.gnu.org/releases/tinycc/tcc-${version}.tar.bz2"
 build_style="gnu-configure"
 configure_args="--config-musl"
+license="LGPL-2.1-or-later"

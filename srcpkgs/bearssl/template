@@ -1,4 +1,5 @@
 pkgname="bearssl"
+short_desc="Implementation of the SSL/TLS protocol (RFC 5246) written in C"
 version="0.6"
 revision="1"
 distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
@@ -8,32 +9,17 @@ license_file="LICENSE.txt"
 
 do_install()
 {
-	neko_pkg install bin build/brssl
-	neko_pkg install lib build/libbearssl.so
-	neko_pkg install lib build/libbearssl.a
+	pkg_install bin build/brssl
+	pkg_install lib build/libbearssl.so
+	pkg_install lib build/libbearssl.a
 }
 
-do_uninstall()
-{
-	neko_pkg uninstall bin brssl
-	neko_pkg uninstall lib libbearssl.so
-	neko_pkg uninstall lib libbearssl.a
-}
-
-neko_subpkg()
+subpkg()
 {
 	pkgname="bearssl-devel"
-	neko_install()
+	short_desc="bearssl developement files"
+	do_install()
 	{
-		neko_pkg install inc inc/*
-	}
-	neko_uninstall()
-	{
-		for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
-			bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
-			bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
-		do
-			neko_pkg uninstall inc "${file}"
-		done
+		pkg_install inc inc/*
 	}
 }

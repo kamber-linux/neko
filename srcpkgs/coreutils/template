@@ -1,4 +1,5 @@
 pkgname="coreutils"
-deps="sbase-git ubase awk"
+short_desc="Core utilities for Sakura"
+deps="sbase-git ubase"
 revision="1"
 build_style="meta"

@@ -1,8 +1,0 @@
---- a/config.mk	2021-03-04 00:13:09.427645869 -0700
-+++ b/config.mk	2021-03-04 00:13:26.155644583 -0700
-@@ -35,4 +35,4 @@
- #LDFLAGS = ${LIBS}
- 
- # compiler and linker
--CC = cc
-+CC = tcc

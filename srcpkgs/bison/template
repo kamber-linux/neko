@@ -1,4 +1,5 @@
 pkgname="bison"
+short_desc="GNU Project parser generator (yacc replacement)"
 version="3.7.6"
 revision="1"
 distfiles="https://ftp.gnu.org/gnu/bison/bison-${version}.tar.gz"

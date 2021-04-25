@@ -1,4 +1,5 @@
 pkgname="libXinerama"
+short_desc="API for Xinerama extension to X11 Protocol"
 deps="libX11 xorgproto libXext"
 version="1.1.4"
 revision="1"
@@ -7,16 +8,12 @@ build_style="configure"
 license="MIT"
 license_file="COPYING"
 
-neko_subpkg()
+subpkg()
 {
 	pkgname="libXinerama-devel"
-	neko_install()
+	short_desc="libXinerama developement files"
+	do_install()
 	{
-		neko_pkg install inc include/*
-	}
-	neko_uninstall()
-	{
-		neko uninstall inc X11/extensions/Xinerama.h
-		neko uninstall inc X11/extensions/panoramiXext.h
+		pkg_install inc include/*
 	}
 }

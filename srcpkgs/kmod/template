@@ -1,0 +1,17 @@
+pkgname="kmod"
+short_desc="Program to manage Linux Kernel modules"
+version="28"
+revision="1"
+distfiles="https://mirrors.edge.kernel.org/pub/linux/utils/kernel/kmod/kmod-${version}.tar.gz"
+build_style="gnu-configure"
+CC="gcc"
+license="GPL-2.0-or-later LGPL-2.1-or-later"
+
+subpkg()
+{
+	pkgname="libkmod"
+	do_install()
+	{
+		pkg_install lib libkmod/*
+	}
+}

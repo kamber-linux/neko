@@ -1,5 +1,8 @@
 pkgname="xorg-server"
+short_desc="X Server"
 version="1.20.10"
 revision="1"
 distfiles="https://www.x.org/releases/individual/xserver/xorg-server-${version}.tar.gz"
 build_style="meson"
+license="MIT"
+license_file="COPYING"

@@ -1,4 +1,5 @@
 pkgname="neko-git"
+short_desc="WIP package manager written in POSIX shell / utilities"
 giturl="https://github.com/kawaiiamber/neko.git"
 revision="1"
 build_style="makefile"

@@ -1,4 +1,5 @@
 pkgname="libxkbfile"
+short_desc="XKB file handling routines"
 version="1.1.0"
 revision="1"
 distfiles="https://x.org/releases/individual/lib/libxkbfile-${version}.tar.gz"

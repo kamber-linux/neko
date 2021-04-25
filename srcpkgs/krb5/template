@@ -1,12 +1,14 @@
 pkgname="krb5"
+short_desc="Kerberos Version 5"
 version="1.19.1"
 revision="1"
 distfiles="http://web.mit.edu/kerberos/dist/krb5/${version%.*}/krb5-${version}.tar.gz"
 build_style="configure"
+CC="gcc"
 license="MIT"
 license_file="NOTICE"
 
-neko_build()
+do_build()
 {
 	./src/configure
 	make

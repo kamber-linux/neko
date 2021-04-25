@@ -1,4 +1,5 @@
 pkgname="libXext"
+short_desc="Library for common extensions to the X11 protocol"
 version="1.3.4"
 revision="1"
 distfiles="https://www.x.org/releases/individual/lib/libXext-${version}.tar.gz"

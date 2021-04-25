@@ -1,4 +1,5 @@
 pkgname="make"
+short_desc="GNU make utility to maintain groups of programs"
 version="4.3"
 revision="1"
 distfiles="https://ftp.gnu.org/gnu/make/make-${version}.tar.gz"

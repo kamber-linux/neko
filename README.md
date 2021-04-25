@@ -13,6 +13,7 @@ Start with copying the included templates to the directory where builds are done
 Very similarly to VOID's package builder, `xbps-src`, every package has it's own folder in `srcpkgs` defined by its `template` file, which gives information on how to build, where to get the source, et cetera. For an example, `neko pkg st` will build based off of `srcpkgs/st/template`:
 ```
 pkgname="st"
+short_desc="Simple terminal"
 version="0.8.4"
 revision="1"
 distfiles="https://dl.suckless.org/st/st-${version}.tar.gz"
@@ -35,6 +36,7 @@ A quick way to make a new package is `./neko new <pkg-name>` for testing.
 To make a new package for pull request, make a directory in `srcpkgs` with the `<pkgname>` - i.e. `mkdir -p srcpkgs/<pkgname>`. Then, write a file `srcpkgs/<pkgname>/template` with the following content:
 ```
 pkgname            - the name of the package
+short_desc         - short description - from the man page, README, repo, summary
 version            - the version of the package (if applicable / not a git build)
 revision           - changes / updates to the template without changing the version, always starts at 1
 distfiles / giturl - the link to the source archive or the link to the git repo
@@ -45,10 +47,10 @@ license            - the license that the software is released under
 Projects very often contain similar steps to build, so `build_style` is meant to simplify the process. At the moment, there are three Build Styles available that do the following at the `neko_build` phase:
 ```
 makefile:
-	make ${make_args}
+	make ${make_build_args}
 configure:
 	./configure ${configure_args}
-	make ${make_args}
+	make ${make_build_args}
 meson:
 	meson build
 	ninja -C build
@@ -68,28 +70,13 @@ do_install()
 	neko_pkg install lib libbearssl.a
 }
 
-do_uninstall()
-{
-	neko_pkg uninstall bin brssl
-	neko_pkg uninstall lib libbearssl.so
-	neko_pkg uninstall lib libbearssl.a
-}
-
-neko_subpkg()
+subpkg()
 {
 	pkgname="bearssl-devel"
-	neko_install()
+	short_desc="bearssl developement files"
+	do_install()
 	{
 		neko_pkg install inc inc/*
-	}
-	neko_uninstall()
-	{
-		for file in bearssl.h bearssl_aead.h bearssl_block.h bearssl_ec.h\
-			bearssl_hash.h bearssl_hmac.h bearssl_kdf.h bearssl_pem.h bearssl_prf.h\
-			bearssl_rand.h bearssl_rsa.h bearssl_ssl.h bearssl_x509.h
-		do
-			neko_pkg uninstall inc "${file}"
-		done
 	}
 }
 ```
@@ -109,29 +96,22 @@ do_build()
 
 do_install()
 {
-	neko_pkg install bin mksh
-	neko_pkg install man mksh.1
+	pkg_install bin mksh
+	pkg_install man mksh.1
 	mv dot.mkshrc .mkshrc
-	neko_pkg install conf .mkshrc /skel
-}
-
-do_uninstall()
-{
-	neko_pkg uninstall bin mksh
-	neko_pkg uninstall man mksh.1
-	neko_pkg uninstall conf skel/.mkshrc
+	pkg_install conf .mkshrc /skel
 }
 ```
-These build styles will try and use `bmake` and `tcc` by default. If GNU `make` is needed, there are `gnu-configure` and `gnu-makefile` build styles. If `gcc` is needed, one can add a `TCC="false" # reason (if applicable)` in the template. For example, the `musl` template:
+These build styles will try and use `bmake` and `tcc` by default. If GNU `make` is needed, there are `gnu-configure` and `gnu-makefile` build styles. If `gcc` or another `CC` is needed, one can add a `CC="<c-compiler>". For example, the `musl` template:
 ```
 pkgname="musl"
 version="1.1.24"
 revision="1"
 distfiles="https://musl-libc.org/releases/musl-${version}.tar.gz"
 build_style="gnu-configure"
-TCC="false" # ./src/internal/dynlink.h:105: error: invalid type
+CC="gcc"
 ```
-The `neko_subpkg` command is currently a work in progress. It would be nice to be able to install `-devel` packages with neko that way one doesn't need them on the host system.
+The `subpkg` command is currently a work in progress. It would be nice to be able to install `-devel` packages with neko that way one doesn't need them on the host system.
 # Contributing
 For contributing to the shell script, shellcheck is used to ensure portability. Please try and use only POSIX utilities (at the moment `wget` and `tar` are the only non-standard utilities as far as I know). When making a pull request, please make a branch with a relavent name and request to merge to the `develop` branch, unless you're making a pull request for a new package.
 ## Packages

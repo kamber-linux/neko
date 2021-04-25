@@ -1,9 +1,10 @@
 pkgname="bmake"
+short_desc="Maintain program dependencies"
 version="20210314"
 revision="1"
 distfiles="http://www.crufty.net/ftp/pub/sjg/bmake-${version}.tar.gz"
 wrksrc="bmake"
 build_style="configure"
-TCC="false" # getopt:0: error: unrecognized character \x7f
+CC="gcc"
 license="BSD-3-Clause"
 license_file="LICENSE"

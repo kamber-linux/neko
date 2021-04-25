@@ -1,3 +1,4 @@
 pkgname="scc-git"
+short_desc="Simple C compiler with magic"
 giturl="git://git.simple-cc.org/scc"
 build_style="makefile"

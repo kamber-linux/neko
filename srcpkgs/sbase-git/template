@@ -1,3 +1,6 @@
 pkgname="sbase-git"
+short_desc="Collection of unix tools portable across UNIX and UNIX-like systems"
 giturl="git://git.suckless.org/sbase"
 build_style="makefile"
+license="MIT"
+license_file="LICENSE"

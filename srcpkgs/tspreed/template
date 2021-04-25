@@ -1,4 +1,5 @@
 pkgname="tspreed"
+short_desc="Terminal RSVP speed reader with Spritz-like functionality"
 version="2.0.1"
 revision="1"
 distfiles="https://github.com/n-ivkovic/tspreed/archive/v${version}.tar.gz"
@@ -6,7 +7,7 @@ build_style="makefile"
 license="GPL-3.0-or-later"
 
 # tspreed doesn't build
-neko_build()
+do_build()
 {
 	:
 }

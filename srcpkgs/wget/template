@@ -1,5 +1,7 @@
 pkgname="wget"
+short_desc="Non-interactive network downloader"
 version="1.21"
 revision="1"
 distfiles="https://ftp.gnu.org/gnu/wget/wget-${version}.tar.gz"
 build_style="configure"
+license="GPL-3.0-or-later"

@@ -1,5 +1,8 @@
 pkgname="sinit"
+short_desc="Simple init"
 version="1.0"
 revision="1"
 distfiles="https://dl.suckless.org/sinit/sinit-${version}.tar.gz"
 build_style="makefile"
+license="MIT"
+license_file="LICENSE"
