@@ -1,0 +1,8 @@
+pkgname="git"
+short_desc=""
+version="2.9.5"
+revision="1"
+distfiles="https://mirrors.edge.kernel.org/pub/software/scm/git/git-${version}.tar.gz"
+build_style="gnu-configure"
+license="custom"
+license_file="COPYING"

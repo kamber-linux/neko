@@ -11,8 +11,9 @@ license_file="COPYING"
 subpkg()
 {
 	pkgname="libXinerama-devel"
+	short_desc="libXinerama developement files"
 	do_install()
 	{
-		neko_pkg install inc include/*
+		pkg_install inc include/*
 	}
 }

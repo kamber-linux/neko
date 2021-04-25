@@ -4,7 +4,7 @@ version="1.19.1"
 revision="1"
 distfiles="http://web.mit.edu/kerberos/dist/krb5/${version%.*}/krb5-${version}.tar.gz"
 build_style="configure"
-TCC="false" # error "Don't know how to do unload-time finalization for this configuration."
+CC="gcc"
 license="MIT"
 license_file="NOTICE"
 

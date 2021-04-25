@@ -4,7 +4,7 @@ version="28"
 revision="1"
 distfiles="https://mirrors.edge.kernel.org/pub/linux/utils/kernel/kmod/kmod-${version}.tar.gz"
 build_style="gnu-configure"
-TCC="false"
+CC="gcc"
 license="GPL-2.0-or-later LGPL-2.1-or-later"
 
 subpkg()
