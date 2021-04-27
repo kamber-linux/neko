@@ -111,7 +111,6 @@ distfiles="https://musl-libc.org/releases/musl-${version}.tar.gz"
 build_style="gnu-configure"
 CC="gcc"
 ```
-The `subpkg` command is currently a work in progress. It would be nice to be able to install `-devel` packages with neko that way one doesn't need them on the host system.
 # Contributing
 For contributing to the shell script, shellcheck is used to ensure portability. Please try and use only POSIX utilities (at the moment `wget` and `tar` are the only non-standard utilities as far as I know). When making a pull request, please make a branch with a relavent name and request to merge to the `develop` branch, unless you're making a pull request for a new package.
 ## Packages
@@ -131,6 +130,9 @@ For a new package, there should only be one commit per package with the commit m
 For updating a package, please have the commit message be: `<pkgname>: update to <version>`.
 ### Patches
 This is how I would recommend doing patches. Make two directories, `a` and `b`, then copy the file / files you want to patch to both. Edit the file / files in `b`. Then, `diff -Naur a/<file> b/<file> > <patch-name>.patch`. Then make a directory in `srcpkgs/<pkgname>` called `patches` and put it in there.
+# Authors
+* CheetahPixie
+* KawaiiAmber
 # TODO
 * Add more build styles / packages
 * Find a POSIX way to replace the `wget` solution for `neko_fetch`
