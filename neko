@@ -79,7 +79,7 @@ interrupt()
 	# to start on a new line
 	echo ""
 	neko_msg error "Command interrupted"
-	exit 1
+	exit 2
 }
 
 # pkg_install are only used in templates
@@ -116,6 +116,7 @@ pkg_install()
 				mkdir -p "${DESTDIR}""${PREFIX}"/lib"${3}"
 				cp -R "${2}" "${DESTDIR}""${PREFIX}"/lib"${3}"
 				# Need a way to handle globs - e.g. pkg_install lib lib/* - same for inc
+				# find "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")" -type f -exec chmod 644 {} \;
 				#chmod 644 "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
@@ -281,7 +282,7 @@ neko_prepare()
 		wrksrc="$(echo "${pkgname}" | sed 's/-git//')"
 	fi
 	archive="${distfiles##*/}"
-	# Allow override of wrksrc and archive
+	# Allow override of wrksrc and archive from the template
 	. "${template_file}"
 }
 
@@ -346,33 +347,34 @@ neko_extract()
 			exit
 		fi
 	# Testing for replacing GNU tar with dd and od commands
-	case "$(od -N 2 -t x2 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-		"8b1f")
-			neko_msg normal "${archive} is a gzip archive"
-			case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-				"08")
-					neko_msg normal "Compression method: deflate"
-					;;
-				*)
-					neko_msg error "Compression method: unknown"
-					;;
-			esac
-			case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-				"03")
-					neko_msg normal "Made on: unix system"
-					;;
-				*)
-					neko_msg normal "Made on: unknown"
-					;;
-			esac
-			;;
-		"4B50")
-			neko_msg normal "${archive} is a zip archive"
-			;;
-		*)
-			neko_msg normal "${archive} is an unknown archive (so far)"
-			;;
-	esac
+	[ -n "${distfiles}" ] &&
+		case "$(od -N 2 -t x2 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+			"8b1f")
+				neko_msg normal "${archive} is a gzip archive"
+				case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+					"08")
+						neko_msg normal "Compression method: deflate"
+						;;
+					*)
+						neko_msg error "Compression method: unknown"
+						;;
+				esac
+				case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+					"03")
+						neko_msg normal "Made on: unix system"
+						;;
+					*)
+						neko_msg normal "Made on: unknown"
+						;;
+				esac
+				;;
+			"4B50")
+				neko_msg normal "${archive} is a zip archive"
+				;;
+			*)
+				neko_msg normal "${archive} is an unknown archive (so far)"
+				;;
+		esac
 	cd "${wrksrc}" || exit
 }
 
@@ -398,7 +400,6 @@ neko_patch()
 
 neko_build()
 {
-	export CC="${CC:-tcc}"
 	case "${build_style}" in
 		"meta")
 			:
@@ -622,6 +623,7 @@ case "${1}" in
 							./neko pkg "${pkg_dep}"
 						fi
 					done
+				export CC="${CC:-tcc}"
 				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
 				then
 					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
@@ -772,13 +774,30 @@ case "${1}" in
 		if
 			mkdir -p "${pkgs_dir}"/"${2}"
 			{
-			echo "pkgname=\"${2}\""
-			echo "short_desc=\"Describe this pkg shortly\""
-			echo "version=\"1.0\""
-			echo "revision=\"1\""
-			echo "distfiles=\"url.to/source-\${version}.tar.gz\""
-			echo "build_style=\"makefile\""
-			echo "license=\"GPL-3.0-or-later\""
+				cat << _EOF
+pkgname="${2}"
+short_desc="Describe the pkg shortly"
+deps="deps go here"
+version="1.0"
+revision="1"
+distfiles="https://url.to/source/pkgname-\${version}.tar.gz"
+#archive="\${distfiles##*/}"
+#wrksrc="\${pkgname}-\${version}"
+build_style="makefile"
+#make_build_args="CC=\${CC}"
+#make_install_args="DESTDIR=\${DESTDIR}"
+license="GPL-3.0-or-later"
+
+#do_build()
+#{
+#	make "\${make_build_args}"
+#}
+
+#do_install()
+#{
+#	make "\${make_install_args}" install
+#}
+_EOF
 			} >> "${pkgs_dir}"/"${2}"/template
 		then
 			neko_msg success "Made a template for ${2} in ${pkgs_dir}/${2}"
@@ -792,7 +811,9 @@ case "${1}" in
 		for arg
 		do
 			neko_msg normal "$(find "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
-			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -exec printf '%s\n' '{}' '+' | xargs -0 -n1 basename 2> /dev/null)
+			# POSIX -exec printf '%s\n' '{}' '+' produces unexpected behaviour
+			# Need to find way to replace -print0 POSIX-ly
+			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -n1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
 				[ "${distfiles}" ] && [ "${version}" ] &&
