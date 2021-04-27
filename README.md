@@ -130,6 +130,9 @@ For a new package, there should only be one commit per package with the commit m
 For updating a package, please have the commit message be: `<pkgname>: update to <version>`.
 ### Patches
 This is how I would recommend doing patches. Make two directories, `a` and `b`, then copy the file / files you want to patch to both. Edit the file / files in `b`. Then, `diff -Naur a/<file> b/<file> > <patch-name>.patch`. Then make a directory in `srcpkgs/<pkgname>` called `patches` and put it in there.
+# Authors
+* KawaiiAmber
+* CheetahPixie
 # TODO
 * Add more build styles / packages
 * Find a POSIX way to replace the `wget` solution for `neko_fetch`
