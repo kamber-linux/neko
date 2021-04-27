@@ -1,0 +1,22 @@
+pkgname="libXft"
+short_desc="X FreeType interface library"
+version="2.3.3"
+revision="1"
+distfiles="https://www.x.org/releases/individual/lib/libXft-${version}.tar.gz"
+build_style="configure"
+license="MIT"
+license_file="COPYING"
+
+libXft_devel_pkg()
+{
+	pkgname="libXft-devel"
+	short_desc="libXft - developement files"
+	do_build()
+	{
+		:
+	}
+	do_install()
+	{
+		pkg_install inc include/*
+	}
+}

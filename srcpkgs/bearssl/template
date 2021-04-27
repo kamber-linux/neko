@@ -14,10 +14,14 @@ do_install()
 	pkg_install lib build/libbearssl.a
 }
 
-subpkg()
+bearssl_devel_pkg()
 {
 	pkgname="bearssl-devel"
-	short_desc="bearssl developement files"
+	short_desc="bearssl - developement files"
+	do_build()
+	{
+		:
+	}
 	do_install()
 	{
 		pkg_install inc inc/*

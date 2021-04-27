@@ -6,3 +6,17 @@ distfiles="https://x.org/releases/individual/lib/libXfont2-${version}.tar.gz"
 build_style="configure"
 license="MIT"
 license_file="COPYING"
+
+libXfont2_devel_pkg()
+{
+	pkgname="libXfont2-devel"
+	short_desc="libXfont2 - developement files"
+	do_build()
+	{
+		:
+	}
+	do_install()
+	{
+		pkg_install inc include/*
+	}
+}

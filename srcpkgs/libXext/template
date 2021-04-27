@@ -6,3 +6,17 @@ distfiles="https://www.x.org/releases/individual/lib/libXext-${version}.tar.gz"
 build_style="configure"
 license="MIT"
 license_file="COPYING"
+
+libXext_devel_pkg()
+{
+	pkgname="libXext-devel"
+	short_desc="libXext - developement files"
+	do_build()
+	{
+		:
+	}
+	do_install()
+	{
+		pkg_install inc include/*
+	}
+}
