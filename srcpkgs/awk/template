@@ -6,7 +6,7 @@ revision="1"
 distfiles="https://github.com/onetrueawk/awk/archive/refs/tags/${version}.tar.gz"
 build_style="makefile"
 CC="gcc"
-license="custom"
+license="MIT"
 license_file="LICENSE"
 
 do_install()

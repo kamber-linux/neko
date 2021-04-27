@@ -7,9 +7,10 @@ build_style="gnu-configure"
 CC="gcc"
 license="GPL-2.0-or-later LGPL-2.1-or-later"
 
-subpkg()
+libkmod_pkg()
 {
 	pkgname="libkmod"
+	short_desc="kmod - shared runtime library"
 	do_install()
 	{
 		pkg_install lib libkmod/*

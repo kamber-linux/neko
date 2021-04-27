@@ -1,6 +1,6 @@
 pkgname="libXinerama"
 short_desc="API for Xinerama extension to X11 Protocol"
-deps="libX11 xorgproto libXext"
+#deps="libX11 xorgproto libXext"
 version="1.1.4"
 revision="1"
 distfiles="https://www.x.org/releases/individual/lib/libXinerama-${version}.tar.gz"
@@ -8,10 +8,14 @@ build_style="configure"
 license="MIT"
 license_file="COPYING"
 
-subpkg()
+libXinerama_devel_pkg()
 {
 	pkgname="libXinerama-devel"
-	short_desc="libXinerama developement files"
+	short_desc="libXinerama - developement files"
+	do_build()
+	{
+		:
+	}
 	do_install()
 	{
 		pkg_install inc include/*

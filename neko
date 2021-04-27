@@ -35,9 +35,15 @@ neko_msg()
 
 usage()
 {
+	printf "%s\n%s\n" "Usage: ${0} command [target]" "See ${0} help"
+	exit
+}
+
+help()
+{
 	cat << _EOF
 [1musage[0m
-neko [command] <target>
+${0} command [target]
 
 [1mcommand[0m:
 init
@@ -73,7 +79,7 @@ interrupt()
 	# to start on a new line
 	echo ""
 	neko_msg error "Command interrupted"
-	exit 1
+	exit 2
 }
 
 # pkg_install are only used in templates
@@ -83,9 +89,9 @@ pkg_install()
 		"bin")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/usr/local/bin
-				cp -r "${2}" "${DESTDIR}"/usr/local/bin
-				chmod 755 "${DESTDIR}"/usr/local/bin/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}""${PREFIX}"/bin
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/bin
+				chmod 755 "${DESTDIR}""${PREFIX}"/bin/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
 			else
@@ -95,9 +101,9 @@ pkg_install()
 		"man")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/usr/local/share/man/man"${3:-1}"
-				cp -r "${2}" "${DESTDIR}"/usr/local/share/man/man"${3:-1}"
-				chmod 644 "${DESTDIR}"/usr/local/share/man/man"${3:-1}"/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}""${PREFIX}"/share/man/man"${3:-1}"
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/share/man/man"${3:-1}"
+				chmod 644 "${DESTDIR}""${PREFIX}"/share/man/man"${3:-1}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
 			else
@@ -107,9 +113,11 @@ pkg_install()
 		"lib")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/usr/local/lib"${3}"
-				cp -r "${2}" "${DESTDIR}"/usr/local/lib"${3}"
-				chmod 644 "${DESTDIR}"/usr/local/lib"${3}"/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}""${PREFIX}"/lib"${3}"
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/lib"${3}"
+				# Need a way to handle globs - e.g. pkg_install lib lib/* - same for inc
+				# find "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")" -type f -exec chmod 644 {} \;
+				#chmod 644 "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
 			else
@@ -119,9 +127,9 @@ pkg_install()
 		"inc")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/usr/local/include"${3}"
-				cp -r "${2}" "${DESTDIR}"/usr/local/include"${3}"
-				chmod 644 "${DESTDIR}"/usr/local/include"${3}"/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}""${PREFIX}"/include"${2}"
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/include"${3}"
+				#chmod 644 "${DESTDIR}""${PREFIX}"/include"${3}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
 			else
@@ -131,9 +139,9 @@ pkg_install()
 		"conf")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/etc"${3}"
-				cp -r "${2}" "${DESTDIR}"/etc"${3}"
-				chmod 644 "${DESTDIR}"/etc"${3}"/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}""${PREFIX}"/etc"${3}"
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/etc"${3}"
+				chmod 644 "${DESTDIR}""${PREFIX}"/etc"${3}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
 			else
@@ -144,9 +152,9 @@ pkg_install()
 			pkg_install file README 644 /usr/share/doc
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}"/usr/local"${4}"
-				cp -r "${2}" "${DESTDIR}"/usr/local"${4}"
-				chmod "${3}" "${DESTDIR}"/usr/local"${4}"/"${2}"
+				mkdir -p "${DESTDIR}""${PREFIX}""${4}"
+				cp -R "${2}" "${DESTDIR}""${PREFIX}""${4}"
+				chmod "${3}" "${DESTDIR}""${PREFIX}""${4}"/"${2}"
 			then
 				echo "Successfully installed $(basename "${2}")"
 			else
@@ -173,7 +181,7 @@ neko_init()
 	done
 	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
 	if
-		cp -r srcpkgs "${base_dir}"
+		cp -R srcpkgs "${base_dir}"
 	then
 		neko_msg success "Successfully copied base srcpkgs to ${base_dir}"
 	else
@@ -182,7 +190,7 @@ neko_init()
 	fi
 	neko_msg normal "Copying licenses to ${base_dir}..."
 	if
-		cp -r licenses "${base_dir}"
+		cp -R licenses "${base_dir}"
 	then
 		neko_msg success "Successfully copied licenses to ${base_dir}"
 	else
@@ -255,6 +263,16 @@ neko_prepare()
 		neko_msg error "No template found for ${1}"
 		exit
 	fi
+	# Make sure we start with clean master dir
+	neko_msg normal "Cleaning master dir..."
+	if
+		rm -rf "${master_dir:?}"/*
+	then
+		neko_msg success "Successfully cleaned master dir"
+	else
+		neko_msg error "Failed to clean master dir"
+		exit
+	fi
 	. "${template_file}"
 	if [ "${distfiles}" ]
 	then
@@ -264,7 +282,7 @@ neko_prepare()
 		wrksrc="$(echo "${pkgname}" | sed 's/-git//')"
 	fi
 	archive="${distfiles##*/}"
-	# Allow override of wrksrc and archive
+	# Allow override of wrksrc and archive from the template
 	. "${template_file}"
 }
 
@@ -329,33 +347,34 @@ neko_extract()
 			exit
 		fi
 	# Testing for replacing GNU tar with dd and od commands
-	case "$(od -N 2 -t x2 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-		"8b1f")
-			neko_msg normal "${archive} is a gzip archive"
-			case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-				"08")
-					neko_msg normal "Compression method: deflate"
-					;;
-				*)
-					neko_msg error "Compression method: unknown"
-					;;
-			esac
-			case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | cut -d' ' -f2)" in
-				"03")
-					neko_msg normal "Made on: unix system"
-					;;
-				*)
-					neko_msg normal "Made on: unknown"
-					;;
-			esac
-			;;
-		"4B50")
-			neko_msg normal "${archive} is a zip archive"
-			;;
-		*)
-			neko_msg normal "${archive} is an unknown archive (so far)"
-			;;
-	esac
+	[ -n "${distfiles}" ] &&
+		case "$(od -N 2 -t x2 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+			"8b1f")
+				neko_msg normal "${archive} is a gzip archive"
+				case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+					"08")
+						neko_msg normal "Compression method: deflate"
+						;;
+					*)
+						neko_msg error "Compression method: unknown"
+						;;
+				esac
+				case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
+					"03")
+						neko_msg normal "Made on: unix system"
+						;;
+					*)
+						neko_msg normal "Made on: unknown"
+						;;
+				esac
+				;;
+			"4B50")
+				neko_msg normal "${archive} is a zip archive"
+				;;
+			*)
+				neko_msg normal "${archive} is an unknown archive (so far)"
+				;;
+		esac
 	cd "${wrksrc}" || exit
 }
 
@@ -381,7 +400,6 @@ neko_patch()
 
 neko_build()
 {
-	export CC="${CC:-tcc}"
 	case "${build_style}" in
 		"meta")
 			:
@@ -389,7 +407,7 @@ neko_build()
 		"makefile")
 			if [ "${make_build_args}" ]
 			then
-				bmake CC="${CC}" "${make_args}"
+				bmake CC="${CC}" "${make_build_args}"
 			else
 				bmake CC="${CC}"
 			fi
@@ -399,7 +417,7 @@ neko_build()
 			then
 				make CC="${CC}" "${make_build_args}"
 			else
-				make CC="${CC}"
+				make "${makejobs}"
 			fi
 			;;
 		"configure")
@@ -411,9 +429,9 @@ neko_build()
 			fi
 			if [ "${make_build_args}" ]
 			then
-				bmake "${make_build_args}"
+				bmake CC="${CC}" "${make_build_args}"
 			else
-				bmake
+				bmake CC="${CC}"
 			fi
 			;;
 		"gnu-configure")
@@ -425,7 +443,7 @@ neko_build()
 			fi
 			if [ "${make_build_args}" ]
 			then
-				make CC="${CC}" "${make_build_args}"
+				make CC="${CC}"
 			else
 				make CC="${CC}"
 			fi
@@ -447,17 +465,17 @@ neko_install()
 		"makefile" | "configure")
 			if [ "${make_install_args}" ]
 			then
-				bmake "${make_install_args}" install
+				bmake DESTDIR="${DESTDIR}" "${make_install_args}" install
 			else
-				bmake install
+				bmake DESTDIR="${DESTDIR}" install
 			fi
 			;;
 		"gnu-makefile" | "gnu-configure")
 			if [ "${make_install_args}" ]
 			then
-				make "${make_install_args}" install
+				make DESTDIR="${DESTDIR}" "${make_install_args}" install
 			else
-				make install
+				make DESTDIR="${DESTDIR}" install
 			fi
 			;;
 		"meson")
@@ -481,62 +499,63 @@ neko_license_install()
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
 					for licenses in ${license_file}
 					do
-						cp -r "${licenses}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
+						cp -R "${licenses}" "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
 						chmod 644 \
 							"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"$(basename "${licenses}")"
 					done
 					;;
 				"GPL-1.0-only" | "GPL-1.0-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/GPL-1 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/GPL-1 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-1
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-2 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"GPL-2.0-only" | "GPL-2.0-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/GPL-2 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/GPL-2 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-2
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-2 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"GPL-3.0-only" | "GPL-3.0-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/GPL-3 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/GPL-3
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/GPL-3 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"AGPL-3.0-only" | "AGPL-3.0-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/AGPL-3 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/AGPL-3 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/AGPL-3
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/AGPL-3 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"LGPL-2-only" | "LGPL-2-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/LGPL-2 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/LGPL-2 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/LGPL-2
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/LGPL-2 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"LGPL-2.1-only" | "LGPL-2.1-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/LGPL-2.1 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/LGPL-2.1 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/LGPL-2.1
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/LGPL-2.1 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"LGPL-3-only" | "LGPL-3-or-later")
 					mkdir -p "${DESTDIR}"/usr/local/share/licenses/"${pkgname}"
-					cp -r "${licenses_dir}"/LGPL-3 "${DESTDIR}"/usr/local/share/licenses
+					cp -R "${licenses_dir}"/LGPL-3 "${DESTDIR}"/usr/local/share/licenses
 					chmod 644 "${DESTDIR}"/usr/local/share/licenses/LGPL-3
 					ln -sf "${DESTDIR}"/usr/local/share/licenses/LGPL-3 \
 						"${DESTDIR}"/usr/local/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				*)
-					:
+					neko_msg error "${pkg_license} is not a valid license name"
+					exit
 					;;
 			esac
 		then
@@ -548,6 +567,10 @@ ${DESTDIR}/usr/local/share/licenses/${pkgname}"
 			exit
 		fi
 	done
+	if [ -z "${license}" ]
+	then
+		neko_msg warning "No license specified for ${pkgname}"
+	fi
 }
 
 neko_uninstall()
@@ -574,6 +597,8 @@ neko_license_uninstall()
 	done
 }
 
+[ -z "${1}" ] && usage
+
 case "${1}" in
 	"init")
 		neko_init
@@ -583,15 +608,6 @@ case "${1}" in
 		;;
 	"pkg")
 		shift 1
-		neko_msg normal "Cleaning master dir..."
-		if
-			rm -rf "${master_dir:?}"/*
-		then
-			neko_msg success "Successfully cleaned master dir"
-		else
-			neko_msg error "Failed to clean master dir"
-			exit
-		fi
 		for arg
 		do
 			if
@@ -607,6 +623,11 @@ case "${1}" in
 							./neko pkg "${pkg_dep}"
 						fi
 					done
+				export CC="${CC:-tcc}"
+				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
+				then
+					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
+				fi
 				for step in fetch extract patch
 				do
 					neko_"${step}" "${arg}"
@@ -628,6 +649,7 @@ case "${1}" in
 						exit
 					fi
 				export DESTDIR="${master_dir}"
+				export PREFIX="/usr/local"
 				neko_msg normal "Installing ${arg}..."
 				if
 					if [ -n "$(command -v do_install)" ]
@@ -670,6 +692,8 @@ case "${1}" in
 				neko_msg error "${arg} is not able to be packaged"
 				exit
 			fi
+			# So that $deps files don't get put in INSTALL file for $arg
+			rm -rf "${master_dir:?}"/*
 		done
 		;;
 	"clean")
@@ -715,7 +739,7 @@ case "${1}" in
 			do
 				mkdir -p\
 					"${PREFIX}""$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
-				cp -r "$(echo "${master_dir}"/"${INSTALL_LINE}" | cut -d' ' -f1)"\
+				cp -R "$(echo "${master_dir}"/"${INSTALL_LINE}" | cut -d' ' -f1)"\
 					"${PREFIX}""$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
 			done < "${database}"/"${pkgname}"/INSTALL
 		done
@@ -750,13 +774,30 @@ case "${1}" in
 		if
 			mkdir -p "${pkgs_dir}"/"${2}"
 			{
-			echo "pkgname=\"${2}\""
-			echo "short_desc=\"Describe this pkg shortly\""
-			echo "version=\"1.0\""
-			echo "revision=\"1\""
-			echo "distfiles=\"url.to/source-\${version}.tar.gz\""
-			echo "build_style=\"makefile\""
-			echo "license=\"GPL-3.0-or-later\""
+				cat << _EOF
+pkgname="${2}"
+short_desc="Describe the pkg shortly"
+deps="deps go here"
+version="1.0"
+revision="1"
+distfiles="https://url.to/source/pkgname-\${version}.tar.gz"
+#archive="\${distfiles##*/}"
+#wrksrc="\${pkgname}-\${version}"
+build_style="makefile"
+#make_build_args="CC=\${CC}"
+#make_install_args="DESTDIR=\${DESTDIR}"
+license="GPL-3.0-or-later"
+
+#do_build()
+#{
+#	make "\${make_build_args}"
+#}
+
+#do_install()
+#{
+#	make "\${make_install_args}" install
+#}
+_EOF
 			} >> "${pkgs_dir}"/"${2}"/template
 		then
 			neko_msg success "Made a template for ${2} in ${pkgs_dir}/${2}"
@@ -769,8 +810,10 @@ case "${1}" in
 		shift 1
 		for arg
 		do
-			neko_msg normal "$(find  "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
-			for pkg_found in $(find  "${pkgs_dir}" -name "*${arg}*" | sed "s|^${pkgs_dir}/||")
+			neko_msg normal "$(find "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
+			# POSIX -exec printf '%s\n' '{}' '+' produces unexpected behaviour
+			# Need to find way to replace -print0 POSIX-ly
+			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -n1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
 				[ "${distfiles}" ] && [ "${version}" ] &&
@@ -785,7 +828,7 @@ case "${1}" in
 		done
 		;;
 	"help")
-		usage
+		help
 		;;
 	*)
 		neko_msg error "Unknown option ${1}"

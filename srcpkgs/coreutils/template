@@ -1,5 +1,5 @@
 pkgname="coreutils"
-short_desc="Core utilities for Sakura"
+short_desc="Suckless coreutils"
 deps="sbase-git ubase"
 revision="1"
 build_style="meta"

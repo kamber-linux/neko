@@ -3,7 +3,6 @@ short_desc="WIP package manager written in POSIX shell / utilities"
 giturl="https://github.com/kawaiiamber/neko.git"
 revision="1"
 build_style="makefile"
-license="GPL-3.0-or-later"
 
 # neko doesn't build
 do_build()

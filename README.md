@@ -70,7 +70,7 @@ do_install()
 	neko_pkg install lib libbearssl.a
 }
 
-subpkg()
+bearssl_devel_pkg()
 {
 	pkgname="bearssl-devel"
 	short_desc="bearssl developement files"
