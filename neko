@@ -380,8 +380,15 @@ neko_extract()
 
 neko_patch()
 {
-	if [ -d "${patches_dir}" ]
-	then
+	[ -d "${patches_dir}" ] &&
+		for patch in "${patches_dir}"/*.patch
+		do
+			[ ! -f "${patch}" ] &&
+				{
+					neko_msg warning "There is a patches directory but no patches"
+					return
+				}
+		done
 		neko_msg normal "Applying patches for ${1}..."
 		for patch in "${patches_dir}"/*.patch
 		do
@@ -395,7 +402,6 @@ neko_patch()
 				exit
 			fi
 		done
-	fi
 }
 
 neko_build()
@@ -670,6 +676,8 @@ case "${1}" in
 					neko_msg normal "Logging files into pkg database..."
 					if
 						mkdir -p "${database}"/"${pkgname}"
+						# FIXME
+						# This will break if a path has a space
 						for line in $(find "${DESTDIR}" -type f)
 						do
 							printf "%s %s\n" "$(echo "${line}" | sed "s|^${DESTDIR}||")"\
@@ -811,8 +819,8 @@ _EOF
 		for arg
 		do
 			neko_msg normal "$(find "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
+			# FIXME
 			# POSIX -exec printf '%s\n' '{}' '+' produces unexpected behaviour
-			# Need to find way to replace -print0 POSIX-ly
 			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -n1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template
