@@ -113,8 +113,8 @@ pkg_install()
 		"lib")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}""${PREFIX}"/lib"${3}"
-				cp -R "${2}" "${DESTDIR}""${PREFIX}"/lib"${3}"
+				mkdir -p "${DESTDIR}""${PREFIX}"/lib
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/lib
 				# Need a way to handle globs - e.g. pkg_install lib lib/* - same for inc
 				# find "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")" -type f -exec chmod 644 {} \;
 				#chmod 644 "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")"
@@ -127,8 +127,8 @@ pkg_install()
 		"inc")
 			echo "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}""${PREFIX}"/include"${2}"
-				cp -R "${2}" "${DESTDIR}""${PREFIX}"/include"${3}"
+				mkdir -p "${DESTDIR}""${PREFIX}"/include
+				cp -R "${2}" "${DESTDIR}""${PREFIX}"/include
 				#chmod 644 "${DESTDIR}""${PREFIX}"/include"${3}"/"$(basename "${2}")"
 			then
 				echo "Successfully installed ${2}"
@@ -289,7 +289,9 @@ neko_prepare()
 neko_fetch()
 {
 	# Remove duplicate wrksrc
-	[ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] &&
+	{
+		[ -n "${distfiles}" ] || [ -n "${giturl}" ]
+	} && [ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] &&
 		rm -rf "${source_dir:?}"/"${wrksrc:?}"
 	# Remove duplicate archive
 	[ "${distfiles}" ] && [ -f "${source_dir}"/"${archive}" ] &&
@@ -320,8 +322,8 @@ neko_fetch()
 	else
 		[ "${build_style}" != "meta" ] &&
 			{
-				neko_msg error "No distfiles or giturl specified"
-				exit
+				neko_msg warning "No distfiles or giturl specified"
+				return
 			}
 	fi
 }
@@ -375,33 +377,38 @@ neko_extract()
 				neko_msg normal "${archive} is an unknown archive (so far)"
 				;;
 		esac
-	cd "${wrksrc}" || exit
+	if [ -n "${distfiles}" ] || [ -n "${giturl}" ]
+	then
+		cd "${wrksrc}" || exit
+	fi
 }
 
 neko_patch()
 {
 	[ -d "${patches_dir}" ] &&
-		for patch in "${patches_dir}"/*.patch
-		do
-			[ ! -f "${patch}" ] &&
-				{
-					neko_msg warning "There is a patches directory but no patches"
-					return
-				}
-		done
-		neko_msg normal "Applying patches for ${1}..."
-		for patch in "${patches_dir}"/*.patch
-		do
-			neko_msg normal "Applying patch ${patch##*/}..."
-			if
-				patch -Np1 < "${patch}"
-			then
-				neko_msg normal "Successfully applied patch ${patch##*/}"
-			else
-				neko_msg error "Failed to apply patch ${patch##*/}"
-				exit
-			fi
-		done
+		{
+			for patch in "${patches_dir}"/*.patch
+			do
+				[ ! -f "${patch}" ] &&
+					{
+						neko_msg warning "There is a patches directory but no patches"
+						return
+					}
+			done
+			neko_msg normal "Applying patches for ${1}..."
+			for patch in "${patches_dir}"/*.patch
+			do
+				neko_msg normal "Applying patch ${patch##*/}..."
+				if
+					patch -Np1 < "${patch}"
+				then
+					neko_msg normal "Successfully applied patch ${patch##*/}"
+				else
+					neko_msg error "Failed to apply patch ${patch##*/}"
+					exit
+				fi
+			done
+		}
 }
 
 neko_build()
@@ -413,17 +420,18 @@ neko_build()
 		"makefile")
 			if [ "${make_build_args}" ]
 			then
-				bmake CC="${CC}" "${make_build_args}"
+				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
 			else
-				bmake CC="${CC}"
+				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
 			fi
 			;;
 		"gnu-makefile")
 			if [ "${make_build_args}" ]
 			then
-				make CC="${CC}" "${make_build_args}"
+				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
 			else
-				make "${makejobs}"
+				#make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
+				make CC="${CC}"
 			fi
 			;;
 		"configure")
@@ -435,9 +443,9 @@ neko_build()
 			fi
 			if [ "${make_build_args}" ]
 			then
-				bmake CC="${CC}" "${make_build_args}"
+				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
 			else
-				bmake CC="${CC}"
+				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
 			fi
 			;;
 		"gnu-configure")
@@ -449,9 +457,9 @@ neko_build()
 			fi
 			if [ "${make_build_args}" ]
 			then
-				make CC="${CC}"
+				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
 			else
-				make CC="${CC}"
+				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
 			fi
 			;;
 		"meson")
@@ -630,6 +638,8 @@ case "${1}" in
 						fi
 					done
 				export CC="${CC:-tcc}"
+				export DESTDIR="${master_dir}"
+				export PREFIX=/usr/local
 				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
 				then
 					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
@@ -654,8 +664,6 @@ case "${1}" in
 						break
 						exit
 					fi
-				export DESTDIR="${master_dir}"
-				export PREFIX="/usr/local"
 				neko_msg normal "Installing ${arg}..."
 				if
 					if [ -n "$(command -v do_install)" ]
@@ -701,7 +709,7 @@ case "${1}" in
 				exit
 			fi
 			# So that $deps files don't get put in INSTALL file for $arg
-			rm -rf "${master_dir:?}"/*
+			#rm -rf "${master_dir:?}"/*
 		done
 		;;
 	"clean")
@@ -741,7 +749,7 @@ case "${1}" in
 			else
 				./neko pkg "${arg}"
 			fi
-			export PREFIX=/
+			export PREFIX=/usr
 			neko_msg normal "Installing ${arg}..."
 			while read -r INSTALL_LINE
 			do
