@@ -1,0 +1,24 @@
+pkgname="freetype"
+deps="pkg-config"
+short_desc=""
+version="2.10.4"
+revision="1"
+distfiles="https://download.savannah.nongnu.org/releases/freetype/freetype-${version}.tar.gz"
+build_style="gnu-makefile"
+CC="gcc"
+license="GPL-2.0-or-later custom"
+license_file="docs/LICENSE.TXT docs/FTL.TXT"
+
+freetype_devel_pkg()
+{
+	pkgname="freetype-devel"
+	short_desc="freetype - developement files"
+	do_build()
+	{
+		:
+	}
+	do_install()
+	{
+		pkg_install inc include/*
+	}
+}

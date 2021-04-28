@@ -1,0 +1,14 @@
+pkgname="bohhextract"
+short_desc="Border of her Hearts (BOHH) extractor"
+version="1.0"
+revision="1"
+
+do_build()
+{
+	:
+}
+
+do_install()
+{
+	pkg_install bin "${files_dir}"/bohhextract
+}
