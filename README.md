@@ -73,10 +73,15 @@ do_install()
 bearssl_devel_pkg()
 {
 	pkgname="bearssl-devel"
-	short_desc="bearssl developement files"
+	short_desc="bearssl - developement files"
 	do_install()
 	{
-		neko_pkg install inc inc/*
+		for file in inc/*
+		do
+			pkg_install inc "${file}"
+		done
+		pkg_install lib "*.so*"
+		pkg_install lib "*.a"
 	}
 }
 ```

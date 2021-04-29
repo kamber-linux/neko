@@ -1,0 +1,21 @@
+pkgname="fontconfig"
+short_desc="Font configuration and customization library"
+deps="gperf"
+version="2.13.93"
+revision="1"
+distfiles="https://www.freedesktop.org/software/fontconfig/release/fontconfig-${version}.tar.gz"
+build_style="gnu-configure"
+CC="gcc"
+license="custom"
+license_file="COPYING"
+
+fontconfig_devel_pkg()
+{
+	pkgname="fontconfig-devel"
+	short_desc="fontconfig - developement files"
+	do_install()
+	{
+		rm -rf fontconfig/Makefile*
+		pkg_install inc fontconfig
+	}
+}

@@ -17,6 +17,9 @@ libXext_devel_pkg()
 	}
 	do_install()
 	{
-		pkg_install inc include/*
+		for file in include/*
+		do
+			pkg_install inc "${file}"
+		done
 	}
 }

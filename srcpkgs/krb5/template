@@ -13,3 +13,19 @@ do_build()
 	./src/configure
 	make
 }
+
+krb5_devel_pkg()
+{
+	pkgname="krb5-devel"
+	short_desc="krb5 - developement files"
+	do_install()
+	{
+		for file in include/*
+		do
+			pkg_install inc "${file}"
+		done
+		pkg_install lib "*.so*"
+		pkg_install lib pkgconfig
+		pkg_install bin build-tools/krb5-config
+	}
+}

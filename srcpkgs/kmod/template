@@ -13,6 +13,17 @@ libkmod_pkg()
 	short_desc="kmod - shared runtime library"
 	do_install()
 	{
-		pkg_install lib libkmod/*
+		pkg_install lib "*.so.*"
+	}
+}
+
+libkmod_devel_pkg()
+{
+	pkgname="libkmod"
+	short_desc="libkmod - developement files"
+	deps="libkmod"
+	do_install()
+	{
+		pkg_install lib "*.so"
 	}
 }

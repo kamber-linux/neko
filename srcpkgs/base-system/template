@@ -1,5 +1,5 @@
 pkgname="base-system"
 short_desc="Sakura linux base system"
-deps="coreutils mksh dash tcc gcc bmake make"
+deps="musl-devel musl coreutils mksh dash tcc gcc bmake make bearssl"
 revision="1"
 build_style="meta"

@@ -6,3 +6,16 @@ distfiles="https://www.x.org/releases/individual/lib/libX11-${version}.tar.gz"
 build_style="gnu-configure"
 license="MIT"
 license_file="COPYING"
+
+libX11_devel_pkg()
+{
+	pkgname="libX11-devel"
+	short_desc="libX11 - developement files"
+	do_install()
+	{
+		pkg_install inc include/X11
+		pkg_install inc "*.so*"
+		pkg_install inc "*.a"
+		pkg_install inc pkgconfig
+	}
+}

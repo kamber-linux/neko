@@ -26,10 +26,10 @@ trap interrupt 2
 neko_msg()
 {
 	case "${1}" in
-		"normal") echo "\033[1m=> \033[36mneko:\033[0m ${2}" ;;
-		"success") echo "\033[1m=> \033[32mneko:\033[0m ${2}" ;;
-		"warning") echo "\033[1m=> \033[33mneko:\033[0m ${2}" ;;
-		"error") echo "\033[1m=> \033[31mneko:\033[0m ${2}" ;;
+		"normal") printf "%s\n" "[1m=> [36mneko:[0m ${2}" ;;
+		"success") printf "%s\n" "[1m=> [32mneko:[0m ${2}" ;;
+		"warning") printf "%s\n" "[1m=> [33mneko:[0m ${2}" ;;
+		"error") printf "%s\n" "[1m=> [31mneko:[0m ${2}" ;;
 	esac
 }
 
@@ -111,29 +111,52 @@ pkg_install()
 			fi
 			;;
 		"lib")
-			echo "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}""${PREFIX}"/lib
-				cp -R "${2}" "${DESTDIR}""${PREFIX}"/lib
-				# Need a way to handle globs - e.g. pkg_install lib lib/* - same for inc
-				# find "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")" -type f -exec chmod 644 {} \;
-				#chmod 644 "${DESTDIR}""${PREFIX}"/lib"${3}"/"$(basename "${2}")"
-			then
-				echo "Successfully installed ${2}"
-			else
-				echo "Failed to install ${2}"
-			fi
+			[ "${2}" = "pkgconfig" ] &&
+				{
+					find . -name "*.pc" |
+						while read -r line
+						do
+							printf "%s\n" "Installing $(basename) "${line}"..."
+							if
+								mkdir -p "${DESTDIR}${PREFIX}"/lib/pkgconfig
+								cp -r "${line}" "${DESTDIR}${PREFIX}"/lib/pkgconfig/"$(basename "${line}")"
+								chmod 755 "${DESTDIR}${PREFIX}"/lib/pkgconfig/"$(basename "${line}")"
+							then
+								printf "%s\n" "Successfully installed ${line}"
+							else
+								printf "%s\n" "Failed to install ${line}"
+							fi
+						done
+						return
+				}
+			find . -name "${2}" |
+				while read -r line
+				do
+					printf "%s\n" "Installing $(basename "${line}")..."
+					if
+						mkdir -p "${DESTDIR}${PREFIX}"/lib
+						cp -r "${line}" "${DESTDIR}${PREFIX}"/lib
+						chmod 755 "${DESTDIR}${PREFIX}"/lib/"$(basename "${line}")"
+					then
+						printf "%s\n" "Successfully installed ${line}"
+					else
+						printf "%s\n" "Failed to install ${line}"
+					fi
+				done
 			;;
 		"inc")
-			echo "Installing $(basename "${2}")..."
+			printf "%s\n" "Installing $(basename "${2}")..."
 			if
-				mkdir -p "${DESTDIR}""${PREFIX}"/include
-				cp -R "${2}" "${DESTDIR}""${PREFIX}"/include
-				#chmod 644 "${DESTDIR}""${PREFIX}"/include"${3}"/"$(basename "${2}")"
+				mkdir -p "${DESTDIR}${PREFIX}"/include
+				cp -R "${2}" "${DESTDIR}${PREFIX}"/include
+				# FIXME
+				# If it runs on a folder, chaos happens with permissions
+				# Fix will probably involve the find command
+				#chmod 644 "${DESTDIR}${PREFIX}"/include/"$(basename "${2}")"
 			then
-				echo "Successfully installed ${2}"
+				printf "%s\n" "Successfully installed ${2}"
 			else
-				echo "Failed to install ${2}"
+				printf "%s\n" "Failed to install ${2}"
 			fi
 			;;
 		"conf")
@@ -264,15 +287,15 @@ neko_prepare()
 		exit
 	fi
 	# Make sure we start with clean master dir
-	neko_msg normal "Cleaning master dir..."
-	if
-		rm -rf "${master_dir:?}"/*
-	then
-		neko_msg success "Successfully cleaned master dir"
-	else
-		neko_msg error "Failed to clean master dir"
-		exit
-	fi
+	#neko_msg normal "Cleaning master dir..."
+	#if
+	#	rm -rf "${master_dir:?}"/*
+	#then
+	#	neko_msg success "Successfully cleaned master dir"
+	#else
+	#	neko_msg error "Failed to clean master dir"
+	#	exit
+	#fi
 	. "${template_file}"
 	if [ "${distfiles}" ]
 	then
@@ -626,6 +649,10 @@ case "${1}" in
 		do
 			if
 				neko_prepare "${arg}"
+				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
+				then
+					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
+				fi
 				[ "${build_style}" = "meta" ] || neko_msg normal "Preparing environment..."
 				[ "${deps}" ] &&
 					for pkg_dep in ${deps}
@@ -640,10 +667,6 @@ case "${1}" in
 				export CC="${CC:-tcc}"
 				export DESTDIR="${master_dir}"
 				export PREFIX=/usr/local
-				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
-				then
-					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
-				fi
 				for step in fetch extract patch
 				do
 					neko_"${step}" "${arg}"
@@ -686,6 +709,7 @@ case "${1}" in
 						mkdir -p "${database}"/"${pkgname}"
 						# FIXME
 						# This will break if a path has a space
+						# Possibly fix by piping find into a while read loop
 						for line in $(find "${DESTDIR}" -type f)
 						do
 							printf "%s %s\n" "$(echo "${line}" | sed "s|^${DESTDIR}||")"\
@@ -829,6 +853,10 @@ _EOF
 			neko_msg normal "$(find "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
 			# FIXME
 			# POSIX -exec printf '%s\n' '{}' '+' produces unexpected behaviour
+			# FIXME
+			# neko find doesn't update short_desc for sub packages
+			# TODO
+			# Redo neko find from scratch at this point...
 			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -n1 basename 2> /dev/null)
 			do
 				. "${pkgs_dir}"/"${pkg_found}"/template

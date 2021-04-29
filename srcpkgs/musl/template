@@ -7,3 +7,18 @@ build_style="gnu-configure"
 CC="gcc"
 license="MIT"
 license_file="COPYRIGHT"
+
+musl_devel_pkg()
+{
+	pkgname="musl-devel"
+	short_desc="musl - developement files"
+	do_install()
+	{
+		for file in include/*
+		do
+			pkg_install inc "${file}"
+		done
+		pkg_install lib "*.so*"
+		pkg_install lib "*.a"
+	}
+}

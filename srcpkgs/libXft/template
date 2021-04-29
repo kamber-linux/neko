@@ -11,12 +11,14 @@ libXft_devel_pkg()
 {
 	pkgname="libXft-devel"
 	short_desc="libXft - developement files"
-	do_build()
-	{
-		:
-	}
 	do_install()
 	{
-		pkg_install inc include/*
+		for file in include/*.h
+		do
+			pkg_install inc "${file}"
+		done
+		pkg_install lib "*.so*"
+		pkg_install lib "*.a"
+		pkg_install lib pkgconfig
 	}
 }

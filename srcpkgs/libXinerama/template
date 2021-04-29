@@ -1,6 +1,6 @@
 pkgname="libXinerama"
 short_desc="API for Xinerama extension to X11 Protocol"
-#deps="libX11 xorgproto libXext"
+deps="libX11 xorgproto libXext"
 version="1.1.4"
 revision="1"
 distfiles="https://www.x.org/releases/individual/lib/libXinerama-${version}.tar.gz"
@@ -12,12 +12,14 @@ libXinerama_devel_pkg()
 {
 	pkgname="libXinerama-devel"
 	short_desc="libXinerama - developement files"
-	do_build()
-	{
-		:
-	}
 	do_install()
 	{
-		pkg_install inc include/*
+		for file in include/*
+		do
+			pkg_install inc "${file}"
+		done
+		pkg_install lib "*.so*"
+		pkg_install lib "*.a"
+		pkg_install lib pkgconfig
 	}
 }

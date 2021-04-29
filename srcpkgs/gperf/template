@@ -1,0 +1,7 @@
+pkgname="gperf"
+short_desc="Generate a perfect hash function from a key set"
+version="3.1"
+revision="1"
+distfiles="https://ftp.gnu.org/gnu/gperf/gperf-${version}.tar.gz"
+build_style="configure"
+license="GPL-3.0-or-later"

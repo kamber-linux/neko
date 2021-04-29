@@ -1,0 +1,7 @@
+pkgname="m4"
+short_desc="Macro processor"
+version="1.4.18"
+revision="1"
+distfiles="https://ftp.gnu.org/gnu/m4/m4-${version}.tar.gz"
+build_style="configure"
+LICENSE="GPL-3.0-or-later"
