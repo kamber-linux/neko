@@ -116,7 +116,7 @@ pkg_install()
 					find . -name "*.pc" |
 						while read -r line
 						do
-							printf "%s\n" "Installing $(basename) "${line}"..."
+							printf "%s\n" "Installing $(basename "${line}")..."
 							if
 								mkdir -p "${DESTDIR}${PREFIX}"/lib/pkgconfig
 								cp -r "${line}" "${DESTDIR}${PREFIX}"/lib/pkgconfig/"$(basename "${line}")"
@@ -286,16 +286,6 @@ neko_prepare()
 		neko_msg error "No template found for ${1}"
 		exit
 	fi
-	# Make sure we start with clean master dir
-	#neko_msg normal "Cleaning master dir..."
-	#if
-	#	rm -rf "${master_dir:?}"/*
-	#then
-	#	neko_msg success "Successfully cleaned master dir"
-	#else
-	#	neko_msg error "Failed to clean master dir"
-	#	exit
-	#fi
 	. "${template_file}"
 	if [ "${distfiles}" ]
 	then
@@ -502,17 +492,17 @@ neko_install()
 		"makefile" | "configure")
 			if [ "${make_install_args}" ]
 			then
-				bmake DESTDIR="${DESTDIR}" "${make_install_args}" install
+				bmake DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" "${make_install_args}" install
 			else
-				bmake DESTDIR="${DESTDIR}" install
+				bmake DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" install
 			fi
 			;;
 		"gnu-makefile" | "gnu-configure")
 			if [ "${make_install_args}" ]
 			then
-				make DESTDIR="${DESTDIR}" "${make_install_args}" install
+				make DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" "${make_install_args}" install
 			else
-				make DESTDIR="${DESTDIR}" install
+				make DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" install
 			fi
 			;;
 		"meson")
@@ -667,7 +657,7 @@ case "${1}" in
 					done
 				export CC="${CC:-tcc}"
 				export DESTDIR="${master_dir}"
-				export PREFIX=/usr/local
+				export PREFIX=/usr
 				for step in fetch extract patch
 				do
 					neko_"${step}" "${arg}"
@@ -709,17 +699,14 @@ case "${1}" in
 					if
 						mkdir -p "${database}"/"${pkgname}"
 						# FIXME
-						# This will break if a path has a space
-						# Possibly fix by piping find into a while read loop
-						# FIXME
 						# Need a way to specify only files from ${arg}
 						# Removing after every pkg will remove dependencies...
 						# Solution possibly involves using diff with previous INSTALL log
-						for line in $(find "${DESTDIR}" -type f)
-						do
-							printf "%s %s\n" "$(echo "${line}" | sed "s|^${DESTDIR}||")"\
-								"$(cksum "${line}" 2> /dev/null | cut -d' ' -f1)"
-						done > "${database}"/"${pkgname}"/INSTALL
+						find "${DESTDIR}" -type f | sed "s|${DESTDIR}||" |
+							while read -r file
+							do
+								printf "%s %s\n" "${file}" "$(cksum "${DESTDIR}${file}" | cut -d' ' -f1)"
+							done > "${database}"/"${pkgname}"/INSTALL
 					then
 						neko_msg success "Successfully logged files into databse"
 					else
@@ -740,24 +727,48 @@ case "${1}" in
 		done
 		;;
 	"clean")
-		neko_msg normal "Cleaning master directory..."
-		if
-			rm -rf "${master_dir:?}"/*
-		then
-			neko_msg success "Successfully cleaned master directory"
-		else
-			neko_msg error "Failed to clean master directory"
-			exit
-		fi
-		neko_msg normal "Cleaning source directory..."
-		if
-			rm -rf "${source_dir:?}"
-		then
-			neko_msg success "Successfully cleaned source directory"
-		else
-			neko_msg error "Failed to clean source directory"
-			exit
-		fi
+		[ "$(id)" = "0" ] &&
+			{
+				neko_msg normal "Cleaning master directory..."
+				if
+					rm -rf "${root_master_dir:?}"/*
+				then
+					neko_msg success "Successfully cleaned master directory"
+				else
+					neko_msg error "Failed to clean master directory"
+					exit
+				fi
+				neko_msg normal "Cleaning source directory..."
+				if
+					rm -rf "${root_src_dir:?}"/*
+				then
+					neko_msg success "Successfully cleaned source directory"
+				else
+					neko_msg error "Failed to clean source directory"
+					exit
+				fi
+			}
+		[ "$(id)" != "0" ] &&
+			{
+				neko_msg normal "Cleaning master directory..."
+				if
+					rm -rf "${master_dir:?}"/*
+				then
+					neko_msg success "Successfully cleaned master directory"
+				else
+					neko_msg error "Failed to clean master directory"
+					exit
+				fi
+				neko_msg normal "Cleaning source directory..."
+				if
+					rm -rf "${src_dir:?}"/*
+				then
+					neko_msg success "Successfully cleaned source directory"
+				else
+					neko_msg error "Failed to clean source directory"
+					exit
+				fi
+			}
 		;;
 	"em" | "emerge")
 		[ "$(id -u)" != "0" ] &&
