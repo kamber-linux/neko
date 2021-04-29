@@ -58,6 +58,7 @@ meson:
 These steps can be over-written in the template, as well, if the upstream package has different instructions. For example, the `bearssl` and `mksh` templates:
 ```
 pkgname="bearssl"
+short_desc="Implementation of the SSL/TLS protocol (RFC 5246) written in C"
 version="0.6"
 revision="1"
 distfiles="https://bearssl.org/bearssl-${version}.tar.gz"
@@ -87,6 +88,7 @@ bearssl_devel_pkg()
 ```
 ```
 pkgname="mksh"
+short_desc="MirBSD Korn shell"
 version="R59c"
 revision="1"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
@@ -110,6 +112,7 @@ do_install()
 These build styles will try and use `bmake` and `tcc` by default. If GNU `make` is needed, there are `gnu-configure` and `gnu-makefile` build styles. If `gcc` or another `CC` is needed, one can add a `CC="<c-compiler>". For example, the `musl` template:
 ```
 pkgname="musl"
+short_desc="Implementation of the standard C library"
 version="1.1.24"
 revision="1"
 distfiles="https://musl-libc.org/releases/musl-${version}.tar.gz"
