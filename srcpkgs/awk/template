@@ -1,5 +1,5 @@
 pkgname="awk"
-short_desc="Pattern scanning and processing language"
+short_desc="Pattern-directed scanning and processing language"
 deps="bison"
 version="20180827"
 revision="1"
@@ -13,4 +13,5 @@ do_install()
 {
 	mv a.out awk
 	pkg_install bin awk
+	pkg_install man awk.1
 }
