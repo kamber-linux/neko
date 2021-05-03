@@ -1,0 +1,8 @@
+pkgname="pipewire"
+short_desc="Service that facilitates sharing of multimedia content between devices and applications"
+version="0.3.26"
+revision="1"
+distfiles="https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/${version}/pipewire-${version}.tar.gz"
+build_style="meson"
+license="MIT"
+license_file="COPYING"
