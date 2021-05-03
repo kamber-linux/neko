@@ -20,7 +20,7 @@ krb5_devel_pkg()
 	short_desc="krb5 - developement files"
 	do_install()
 	{
-		for file in include/*
+		for file in include/gssapi include/gssapi/* include/krb5 include/krb5/*
 		do
 			pkg_install inc "${file}"
 		done
