@@ -35,13 +35,60 @@ neko_msg()
 
 usage()
 {
-	printf "%s\n%s\n" "Usage: ${0} command [target]" "See ${0} help"
-	exit
+	case "${1}" in
+		"neko")
+			cat << _EOF
+[1musage[0m
+${0} command [target]
+
+See ${0} --help
+_EOF
+			;;
+		"pkg")
+			cat << _EOF
+[1musage[0m
+${0} pkg <target>
+
+See ${0} pkg --help
+_EOF
+			;;
+		"emerge")
+			cat << _EOF
+[1musage[0m
+${0} em <target>
+OR
+${0} em <target>
+
+See ${0} em --help
+OR
+See ${0} emerge --help
+_EOF
+			;;
+		"uninstall")
+			cat << _EOF
+[1musage[0m
+${0} uninstall <target>
+
+See ${0} uninstall --help
+_EOF
+			;;
+		"find")
+			cat << _EOF
+[1musage[0m
+${0} find <target>
+
+See ${0} find --help
+_EOF
+			;;
+	esac
+exit
 }
 
 help()
 {
-	cat << _EOF
+	case "${1}" in
+		"neko")
+			cat << _EOF
 [1musage[0m
 ${0} command [target]
 
@@ -49,21 +96,21 @@ ${0} command [target]
 init
 	Initializes the environment for use with the templates - must be run before
 	packaging from templates.
-pkg
+pkg <target>
 	Checks to see if the <target> can be properly packaged from the template.
-em | emerge
+em | emerge <target>
 	Emerges the <target>. Will build and install it to the system.
-uninstall
-	Will uninstall <target> to the system.
-find
+uninstall <target>
+	Will uninstall <target> from the system.
+find <target>
 	Will search for the <target>
 clean
 	Cleans up the master directory.
 zap
 	Will remove everything from the neko directory - you must run neko init
 	after doing so.
-help
-	Displays this message
+help [command]
+	Displays this message, or help [command] to get help on [command]
 
 [1mstatus[0m:
 Neko will have different colors depending on the status:
@@ -72,6 +119,118 @@ $(neko_msg success "This is a successful message.")
 $(neko_msg warning "This is a warning message.")
 $(neko_msg error "This is an error message.")
 _EOF
+			;;
+		"init")
+			cat << _EOF
+[1musage[0m
+${0} init
+
+init
+	Copies the srcpkgs directory, licenses directory, and makes the src and master
+	directory in \${XDG_DATA_HOME:-\$HOME/.local/share}/neko. Run this once to
+	initialize the process of packaging software. To make changes for your local
+	system, change the templates in the created directory. To make changes for a
+	pull request / upstream change, change the files in the neko git repo.
+_EOF
+			;;
+		"pkg")
+			cat << _EOF
+[1musage[0m
+${0} pkg <target>
+
+pkg
+	Will download, build, and install <target> from srcpkgs to an empty DESTDIR
+	based off of the package's template. This step is invoked before the emerge
+	step as it also sets up the INSTALL log which contains information on what was
+	installed to the empty DESTDIR. ${0} pkg will first do this to the templates
+	"deps" if it has any.
+
+	Multiple arguments can be given to ${0} pkg and they will execute in the order
+	that ${0} pkg is given. It is recommended to only pass one argument for the
+	time being as multiple arguments currently is bugged.
+_EOF
+			;;
+		"emerge")
+			cat << _EOF
+[1museage[0m
+${0} em <target>
+OR
+${0} emerge <target>
+
+em | emerge
+	Will first run ${0} pkg <target>. This builds and installs to empty DESTDIR to
+	make an INSTALL log (see ${0} help pkg for more details). It will run
+	${0} pkg <target> for all of the "deps" if there are any. It then exports
+	PREFIX to "/" and copies the files from the INSTALL log from the pkg step. It
+	will do this for everything in "deps" if there are any.
+
+	Multiple arguments can be given to ${0} em and they will execute in the order
+	that ${0} em is given. It is recommended to only pass one argument for the
+	time being as multiple arguments currently is bugged.
+_EOF
+			;;
+		"uninstall")
+			cat << _EOF
+[1musage[0m
+${0} uninstall <target>
+
+uninstall
+	Will remove files from PREFIX (/) based off of the INSTALL log made from the
+	pkg step.
+_EOF
+			;;
+		"find")
+			cat << _EOF
+[1musage[0m
+${0} find <target>
+
+find
+	Will search in pkgs_dir (made after running ${0} init) for <target> and
+	display the package name, version, revision, and the short decription of
+	<target>.
+
+	Multiple arguments can be given to ${0} find
+_EOF
+			;;
+		"new")
+			cat << _EOF
+[1musage[0m
+${0} new <target>
+_EOF
+			;;
+		"clean")
+			cat << _EOF
+[1musage[0m
+${0} clean
+
+clean
+	Will remove files from the empty DESTDIR (the master directory) and files from
+	the source directory (src, where the source code gets downloaded).
+_EOF
+			;;
+		"zap")
+			cat << _EOF
+[1musage[0m
+${0} zap
+
+zap
+	Like ${0} clean, but stronger. Will remove EVERYTHING from the neko directory
+	in \${XDG_DATA_HOME:-\$HOME}/.local/share/neko. You will need to run ${0} init
+	again if you want to package something locally.
+_EOF
+			;;
+		"help")
+			cat << _EOF
+[1musage[0m
+${0} help [command]
+
+help
+	Displays help for [command]. If no argument is given, it is equivalent to
+	${0} help neko.
+_EOF
+			;;
+	esac
+exit
 }
 
 interrupt()
@@ -241,31 +400,31 @@ neko_prepare()
 	[ ! -d "${pkgs_dir}" ] && [ ! -d "${root_pkgs_dir}" ] &&
 		{
 			neko_msg error "No base srcpkgs found in ${base_dir}"
-			neko_msg normal "Run neko init"
+			neko_msg normal "Run ${0} init"
 			exit
 		}
 	[ ! -d "${master_dir}" ] && [ ! -d "${root_master_dir}" ] &&
 		{
 			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run neko init"
+			neko_msg normal "Run ${0} init"
 			exit
 		}
 	[ ! -d "${src_dir}" ] && [ ! -d "${root_src_dir}" ] &&
 		{
 			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run neko init"
+			neko_msg normal "Run ${0} init"
 			exit
 		}
 	[ ! -d "${licenses_dir}" ] && [ ! -d "${root_license_dir}" ] &&
 		{
 			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run neko init"
+			neko_msg normal "Run ${0} init"
 			exit
 		}
 	[ ! -d "${db_dir}" ] && [ ! -d "${root_db_dir}" ] &&
 		{
 			neko_msg error "No databse dir found in ${base_dir}"
-			neko_msg normal "Run neko init"
+			neko_msg normal "Run ${0} init"
 			exit
 		}
 	if [ -f "${pkgs_dir}"/"${1}"/template ]
@@ -361,35 +520,6 @@ neko_extract()
 			neko_msg error "Failed to extract distfiles for ${pkgname}"
 			exit
 		fi
-	# Testing for replacing GNU tar with dd and od commands
-	[ -n "${distfiles}" ] &&
-		case "$(od -N 2 -t x2 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
-			"8b1f")
-				neko_msg normal "${archive} is a gzip archive"
-				case "$(od -N 1 -j 2 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
-					"08")
-						neko_msg normal "Compression method: deflate"
-						;;
-					*)
-						neko_msg error "Compression method: unknown"
-						;;
-				esac
-				case "$(od -N 1 -j 9 -t x1 "${archive}" | head -n 1 | sed 's/^.*\ //')" in
-					"03")
-						neko_msg normal "Made on: unix system"
-						;;
-					*)
-						neko_msg normal "Made on: unknown"
-						;;
-				esac
-				;;
-			"4B50")
-				neko_msg normal "${archive} is a zip archive"
-				;;
-			*)
-				neko_msg normal "${archive} is an unknown archive (so far)"
-				;;
-		esac
 	if [ -n "${distfiles}" ] || [ -n "${giturl}" ]
 	then
 		cd "${wrksrc}" || exit
@@ -631,17 +761,22 @@ neko_license_uninstall()
 	done
 }
 
-[ -z "${1}" ] && usage
+[ -z "${1}" ] && usage neko
 
 case "${1}" in
 	"init")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help init ;;
+		esac
 		neko_init
-		;;
-	"zap")
-		neko_zap
 		;;
 	"pkg")
 		shift 1
+		case "$@" in
+			"--help" | "-h") help pkg ;;
+		esac
+		[ -z "${1}" ] && usage pkg
 		for arg
 		do
 			if
@@ -733,7 +868,164 @@ case "${1}" in
 			fi
 		done
 		;;
+	"em" | "emerge")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help emerge ;;
+		esac
+		[ -z "${1}" ] && usage emerge
+		[ "$(id -u)" != "0" ] &&
+			{
+				neko_msg error "You must have root permissions to run this command"
+				exit
+			}
+		for arg
+		do
+			neko_prepare "${arg}"
+			[ "${deps}" ] &&
+				for pkg_deps in ${deps}
+				do
+					if [ -n "$(command -v neko)" ]
+					then
+						neko em "${pkg_dep}"
+					else
+						./neko em "${pkg_dep}"
+					fi
+				done
+			if [ -n "$(command -v neko)" ]
+			then
+				neko pkg "${arg}"
+			else
+				./neko pkg "${arg}"
+			fi
+			export PREFIX=/usr
+			neko_msg normal "Installing ${arg}..."
+			while read -r INSTALL_LINE
+			do
+				mkdir -p\
+					"${PREFIX}""$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
+				cp -R "$(echo "${master_dir}"/"${INSTALL_LINE}" | cut -d' ' -f1)"\
+					"${PREFIX}""$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
+			done < "${database}"/"${pkgname}"/INSTALL
+		done
+		;;
+	"uninstall")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help uninstall ;;
+		esac
+		[ -z "${1}" ] && usage uninstall
+		[ "$(id -u)" != "0" ] &&
+			{
+				neko_msg error "You must have root permissions to run this command"
+				exit
+			}
+		for arg
+		do
+			neko_msg normal "Uninstalling ${arg}..."
+			if
+				neko_uninstall "${arg}"
+				neko_license_uninstall
+			then
+				neko_msg success "Successfully uninstalled ${arg}"
+			else
+				neko_msg error "Failed to uninstall ${arg}"
+			fi
+		done
+		;;
+	"find")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help find ;;
+		esac
+		[ -z "${1}" ] && usage find
+		[ ! -d "${pkgs_dir}" ] &&
+			{
+				neko_msg error "No srcpkgs directory found"
+				neko_msg normal "Run ${0} init"
+				exit
+			}
+		for arg
+		do
+			neko_msg normal "$(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l) result(s) found for ${arg}"
+			find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" |
+				while read -r line
+				do
+					. "${line}"/template 2>/dev/null
+					# TODO
+					# Find better way to find sub pkgs such as -devel
+					# At the moment, one must type the exact name
+					# e.g. neko find musl-devel
+					if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
+					then
+						"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
+					fi
+					# otherwise <pkgname>-git-_1 can occur
+					if [ -n "${distfiles}" ]
+					then
+						printf "[1m%s[0m\t%s\n" "${pkgname}-${version}_${revision}" "${short_desc}"
+					else
+						printf "[1m%s[0m\t%s\n" "${pkgname}_${revision}" "${short_desc}"
+					fi
+					unset distfiles
+					unset pkgname
+					unset version
+					unset revision
+					unset short_desc
+				done
+		done
+		;;
+	"new")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help new ;;
+		esac
+		[ -d "${pkgs_dir}"/"${1}" ] &&
+			{
+				neko_msg error "There's already a template for ${1}"
+				exit
+			}
+		neko_msg normal "Making a base template for ${1}..."
+		if
+			mkdir -p "${pkgs_dir}"/"${1}"
+			{
+				cat << _EOF
+pkgname="${1}"
+short_desc="Describe the pkg shortly"
+deps="deps go here"
+version="1.0"
+revision="1"
+distfiles="https://url.to/source/pkgname-\${version}.tar.gz"
+#archive="\${distfiles##*/}"
+#wrksrc="\${pkgname}-\${version}"
+build_style="makefile"
+#make_build_args="CC=\${CC}"
+#make_install_args="DESTDIR=\${DESTDIR}"
+license="GPL-3.0-or-later"
+
+#do_build()
+#{
+#	make "\${make_build_args}"
+#}
+
+#do_install()
+#{
+#	make "\${make_install_args}" install
+#}
+_EOF
+			} >> "${pkgs_dir}"/"${1}"/template
+		then
+			neko_msg success "Made a template for ${1} in ${pkgs_dir}/${1}"
+			vi "${pkgs_dir}"/"${1}"/template
+		else
+			neko_msg error "Failed to make a template for ${1}"
+		fi
+		;;
 	"clean")
+		shift 1
+		case "$@" in
+			"--help" | "-h") help clean ;;
+		esac
 		[ "$(id)" = "0" ] &&
 			{
 				neko_msg normal "Cleaning master directory..."
@@ -777,132 +1069,22 @@ case "${1}" in
 				fi
 			}
 		;;
-	"em" | "emerge")
-		[ "$(id -u)" != "0" ] &&
-			{
-				neko_msg error "You must have root permissions to run this command"
-				exit
-			}
-		shift 1
-		for arg
-		do
-			neko_prepare "${arg}"
-			[ "${deps}" ] &&
-				for pkg_deps in ${deps}
-				do
-					if [ -n "$(command -v neko)" ]
-					then
-						neko em "${pkg_dep}"
-					else
-						./neko em "${pkg_dep}"
-					fi
-				done
-			if [ -n "$(command -v neko)" ]
-			then
-				neko pkg "${arg}"
-			else
-				./neko pkg "${arg}"
-			fi
-			export PREFIX=/usr
-			neko_msg normal "Installing ${arg}..."
-			while read -r INSTALL_LINE
-			do
-				mkdir -p\
-					"${PREFIX}""$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
-				cp -R "$(echo "${master_dir}"/"${INSTALL_LINE}" | cut -d' ' -f1)"\
-					"${PREFIX}""$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
-			done < "${database}"/"${pkgname}"/INSTALL
-		done
+	"zap")
+		neko_zap
 		;;
-	"uninstall")
-		[ "$(id -u)" != "0" ] &&
-			{
-				neko_msg error "You must have root permissions to run this command"
-				exit
-			}
-		shift 1
-		for arg
-		do
-			neko_msg normal "Uninstalling ${arg}..."
-			if
-				neko_uninstall "${arg}"
-				neko_license_uninstall
-			then
-				neko_msg success "Successfully uninstalled ${arg}"
-			else
-				neko_msg error "Failed to uninstall ${arg}"
-			fi
-		done
-		;;
-	"new")
-		[ -d "${pkgs_dir}"/"${2}" ] &&
-			{
-				neko_msg error "There's already a template for ${2}"
-				exit
-			}
-		neko_msg normal "Making a base template for ${2}..."
-		if
-			mkdir -p "${pkgs_dir}"/"${2}"
-			{
-				cat << _EOF
-pkgname="${2}"
-short_desc="Describe the pkg shortly"
-deps="deps go here"
-version="1.0"
-revision="1"
-distfiles="https://url.to/source/pkgname-\${version}.tar.gz"
-#archive="\${distfiles##*/}"
-#wrksrc="\${pkgname}-\${version}"
-build_style="makefile"
-#make_build_args="CC=\${CC}"
-#make_install_args="DESTDIR=\${DESTDIR}"
-license="GPL-3.0-or-later"
-
-#do_build()
-#{
-#	make "\${make_build_args}"
-#}
-
-#do_install()
-#{
-#	make "\${make_install_args}" install
-#}
-_EOF
-			} >> "${pkgs_dir}"/"${2}"/template
-		then
-			neko_msg success "Made a template for ${2} in ${pkgs_dir}/${2}"
-			vi "${pkgs_dir}"/"${2}"/template
-		else
-			neko_msg error "Failed to make a template for ${2}"
-		fi
-		;;
-	"find")
-		shift 1
-		for arg
-		do
-			neko_msg normal "$(find "${pkgs_dir}" -name "*${arg}*" | wc -l) result(s) found for ${arg}"
-			# FIXME
-			# POSIX -exec printf '%s\n' '{}' '+' produces unexpected behaviour
-			# FIXME
-			# neko find doesn't update short_desc for sub packages
-			# TODO
-			# Redo neko find from scratch at this point...
-			for pkg_found in $(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" -print0 | xargs -0 -n1 basename 2> /dev/null)
-			do
-				. "${pkgs_dir}"/"${pkg_found}"/template
-				[ "${distfiles}" ] && [ "${version}" ] &&
-					printf "%s\t%s\n" "[1m${pkg_found}-${version}_${revision}[0m" "${short_desc}"
-				[ "${build_style}" = "meta" ] &&
-					printf "%s\t%s\n" "[1m${pkg_found}_${revision}[0m" "${short_desc}"
-				[ "${giturl}" ] &&
-					printf "%s\t%s\n" "[1m${pkg_found}[0m" "${short_desc}"
-				unset version
-				unset giturl
-			done
-		done
-		;;
-	"help")
-		help
+	"help" | "--help" | "-h")
+		case "${2}" in
+			"neko") help neko ;;
+			"init") help init ;;
+			"pkg") help pkg ;;
+			"em" | "emerge") help emerge ;;
+			"uninstall") help uninstall ;;
+			"find") help find ;;
+			"clean") help clean ;;
+			"zap") help zap ;;
+			"help") help help ;;
+			*) help neko ;;
+		esac
 		;;
 	*)
 		neko_msg error "Unknown option ${1}"
