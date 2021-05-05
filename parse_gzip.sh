@@ -115,7 +115,7 @@ READ_COUNTER=$((READ_COUNTER + 1))
 	{
 		NAME=""
 		NAME_INDEX=0
-		while [ "$(od -An -N 1 -j "$(( READ_COUNTER + NAME_INDEX ))" -t x1 "${1}" | head -n 1 | sed 's/.*\ //g; s/^0//')" != "0" ]
+		while [ "$(od -An -N 1 -j "$(( READ_COUNTER + NAME_INDEX ))" -t x1 "${1}" | head -n 1 | sed 's/.*\ //g; s/^00/0/')" != "0" ]
 		do
 			NAME="${NAME}$(od -An -N 1 -j "$(( READ_COUNTER + NAME_INDEX ))" -t c "${1}" | head -n 1 | sed 's/.*\ //g')"
 			NAME_INDEX=$(( NAME_INDEX + 1 ))
@@ -131,7 +131,7 @@ READ_COUNTER=$((READ_COUNTER + 1))
 	{
 		COMMENT=""
 		COMMENT_INDEX=0
-		while [ "$(od -An -N 1 -j "$(( READ_COUNTER + COMMENT_INDEX ))" -t x1 "${1}" | head -n 1 | sed 's/.*\ //g; s/^0//')" != "0" ]
+		while [ "$(od -An -N 1 -j "$(( READ_COUNTER + COMMENT_INDEX ))" -t x1 "${1}" | head -n 1 | sed 's/.*\ //g; s/^00/0/')" != "0" ]
 		do
 			COMMENT="${COMMENT}$(od -An -N 1 -j "$(( READ_COUNTER + COMMENT_INDEX ))" -t c "${1}" | head -n 1 | sed 's/.*\ //g')"
 			COMMENT_INDEX=$(( COMMENT_INDEX + 1 ))

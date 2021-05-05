@@ -618,6 +618,9 @@ neko_build()
 neko_install()
 {
 	case "${build_style}" in
+		"meta")
+			:
+			;;
 		"makefile" | "configure")
 			if [ "${make_install_args}" ]
 			then
@@ -656,7 +659,7 @@ neko_license_install()
 		neko_msg normal "Installing ${pkg_license} license for ${pkgname}..."
 		if
 			case "${pkg_license}" in
-				"MIT" | "BSD-3-Clause" | "custom")
+				"MIT" | "BSD-3-Clause" | "ISC" | "custom")
 					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
 					for licenses in ${license_file}
 					do
@@ -664,6 +667,20 @@ neko_license_install()
 						chmod 644 \
 							"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/$(basename "${licenses}")"
 					done
+					;;
+				"Public-Domain")
+					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
+					cp -R "${licenses_dir}"/Public-Domain "${DESTDIR}${PREFIX}"/share/licenses
+					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/Public-Domain
+					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/Public-Domain \
+						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
+					;;
+				"Apache-2.0")
+					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
+					cp -R "${licenses_dir}"/Apache-2 "${DESTDIR}${PREFIX}"/share/licenses
+					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/Apache-2
+					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/Apache-2 \
+						"${DESTDIR}${PREFIX}"/share/licenses/"${pkgname}"/"${pkg_license}"
 					;;
 				"GPL-1.0-only" | "GPL-1.0-or-later")
 					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
