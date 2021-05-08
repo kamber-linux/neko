@@ -5,27 +5,39 @@ usage()
 	printf "%s\n" "usage: ${0} FILE"
 	exit
 }
-[ -z "${1}" ] || [ "$#" != "1" ] || [ ! -f "$1" ] && usage
+[ "$#" != "1" ] || [ ! -f "$1" ] && usage
 
-# how many bytes in the file were in
+# how many bytes in the file we are in
 # starts at 0
 READ_COUNTER=0
 
+# usage: change VALUE (MATH EXPRESSION)
+# modify a value depending on itself
+# e.g. change INDEX + 1 + VALUE -> INDEX = INDEX + 1 + VALUE
+change()
+{
+	CHANGE_VAR="${1}"
+	shift 1
+	eval "${CHANGE_VAR}"="$(( $CHANGE_VAR $@ ))"
+	unset CHANGE_VAR
+}
+
 # usage: bytes <number of bytes> <type of read> <additional bytes counter>
 # alias out becuase we're always expecting an argument - ${1}
+# e.g. - bytes 1 x1 6 -> reads 1 x1 byte 6 bytes ahead of current READ_COUNTER
+# bytes 1 x1 0 -> current byte
 bytes()
 {
 	od -An -N "${2}" -j "$(( READ_COUNTER + ${4} ))" -t "${3}" "${1}" | sed "s/\s*//g; /^$/ d"
 }
 alias bytes='bytes "${1}"'
 
-# usage: read_bytes VAR <number of bytes> <type of read>
-# VAR is name of variable
+# usage: read_bytes VARIABLE <number of bytes> <type of read>
 # e.g. - read_bytes os 1 u1 will store one u1 byte to os variable
 read_bytes()
 {
 	eval "${2}"="$(od -An -N "${3}" -j "${READ_COUNTER}" -t "${4}" "${1}" | sed "s/\s*//g; /^$/ d")"
-	READ_COUNTER=$(( READ_COUNTER + ${3} ))
+	change READ_COUNTER + ${3}
 }
 alias read_bytes='read_bytes "${1}"'
 
@@ -89,11 +101,11 @@ esac
 		HAS_EXTRA_COUNTER=0
 		for subfield_count in $(seq "${len_subfields}")
 		do
-			READ_COUNTER=$(( READ_COUNTER + HAS_EXTRA_COUNTER ))
+			change READ_COUNTER + HAS_EXTRA_COUNTER
 			read_bytes len_data 2 u2
-			HAS_EXTRA_COUNTER=$(( HAS_EXTRA_COUNTER + READ_COUNTER ))
+			change HAS_EXTRA_COUNTER + READ_COUNTER
 		done
-		READ_COUNTER=$(( READ_COUNTER + HAS_EXTRA_COUNTER ))
+		change READ_COUNTER + HAS_EXTRA_COUNTER
 		unset HAS_EXTRA_COUNTER
 		printf "%s\n" "EXTRA: ${EXTRA}"
 	}
@@ -106,11 +118,12 @@ esac
 		while [ "$(bytes 1 x1 "${NAME_INDEX}" | sed "s/00/0/g")" != "0" ]
 		do
 			NAME="${NAME}$(bytes 1 c "${NAME_INDEX}")"
-			NAME_INDEX=$(( NAME_INDEX + 1 ))
+			change NAME_INDEX + 1
 		done
 		unset NAME_INDEX
 		NAME_LENGTH=${#NAME}
-		READ_COUNTER=$(( READ_COUNTER + NAME_LENGTH + 1 ))
+		# + 1 to account for the null byte 00 (0 in this case)
+		change READ_COUNTER + NAME_LENGTH + 1
 		unset NAME_LENGTH
 		printf "%s\n" "NAME: ${NAME}"
 	}
@@ -122,11 +135,11 @@ esac
 		while [ "$(bytes 1 x1 "${COMMENT_INDEX}" | sed "s/00/0/g")" != "0" ]
 		do
 			COMMENT="${COMMENT}$(bytes 1 c "${COMMENT_INDEX}")"
-			COMMENT_INDEX=$(( COMMENT_INDEX + 1 ))
+			change COMMENT_INDEX + 1
 		done
 		unset COMMENT_INDEX
 		COMMENT_LENGTH=${#COMMENT}
-		READ_COUNTER=$(( READ_COUNTER + COMMENT_LENGTH + 1 ))
+		change READ_COUNTER + COMMENT_LENGTH + 1
 		unset COMMENT_LENGTH
 		printf "%s\n" "COMMENT: ${COMMENT}"
 	}
@@ -138,10 +151,13 @@ esac
 	}
 
 COMPRESSED_SIZE=$(wc -c "${1}" | cut -d' ' -f1)
-COMPRESSED_SIZE=$(( COMPRESSED_SIZE - READ_COUNTER - 8 ))
+change COMPRESSED_SIZE - READ_COUNTER - 8
 
-dd if="${1}" of="${NAME:-${1%.*}}" ibs="${COMPRESSED_SIZE}" obs=1 seek="${READ_COUNTER}" count=1
-READ_COUNTER=$(( READ_COUNTER + COMPRESSED_SIZE ))
+# So that output place has same behaviour whether NAME is set or not
+[ -z "${NAME}" ] && OUTPUT="${1%.*}" || OUTPUT="$(dirname "${1}")/${NAME}"
+
+dd if="${1}" of="${OUTPUT}" ibs="${COMPRESSED_SIZE}" obs=1 seek="${READ_COUNTER}" count=1
+change READ_COUNTER + COMPRESSED_SIZE
 
 read_bytes body_crc32 4 u4
 read_bytes len_uncompressed 4 u4
