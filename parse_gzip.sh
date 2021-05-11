@@ -152,13 +152,17 @@ esac
 
 COMPRESSED_SIZE=$(wc -c "${1}" | cut -d' ' -f1)
 change COMPRESSED_SIZE - READ_COUNTER - 8
+#dd if="${1}" of="${OUTPUT}" ibs="${COMPRESSED_SIZE}" obs=1 seek="${READ_COUNTER}" count=1
+change READ_COUNTER + COMPRESSED_SIZE
 
 # So that output place has same behaviour whether NAME is set or not
 [ -z "${NAME}" ] && OUTPUT="${1%.*}" || OUTPUT="$(dirname "${1}")/${NAME}"
 
-dd if="${1}" of="${OUTPUT}" ibs="${COMPRESSED_SIZE}" obs=1 seek="${READ_COUNTER}" count=1
-change READ_COUNTER + COMPRESSED_SIZE
-
 read_bytes body_crc32 4 u4
 read_bytes len_uncompressed 4 u4
 # END OF FILE
+
+printf "%s\n" "Uncompressed name: $(basename "${OUTPUT}")"
+printf "%s\n" "Compressed data size: ${COMPRESSED_SIZE}"
+printf "%s\n" "Compressed file size: ${READ_COUNTER}"
+printf "%s\n" "Uncompressed size: ${len_uncompressed}"
