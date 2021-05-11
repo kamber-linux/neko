@@ -10,7 +10,7 @@
 root_base_dir="${DESTDIR}"/usr/local/share/neko
 root_pkgs_dir="${root_base_dir}"/srcpkgs
 root_src_dir="${root_base_dir}"/src
-root_master_dir="${root_master_dir}"/master
+root_master_dir="${root_base_dir}"/master
 root_license_dir="${root_base_dir}"/licenses
 root_db_dir="${root_base_dir}"/db
 
@@ -751,8 +751,8 @@ neko_uninstall()
 {
 	while read -r pkg_file
 	do
-		rm -rf "${DESTDIR:?}"/"${pkg_file}"
-	done < "${database}"/"${pkgname}"/INSTALL
+		rm -rf "${DESTDIR:?}${pkg_file}"
+	done < "${database}/${pkgname}-${version}_${revision}"/INSTALL
 }
 
 neko_license_uninstall()
@@ -858,7 +858,7 @@ case "${1}" in
 							while read -r file
 							do
 								printf "%s %s\n" "${file}" "$(cksum "${DESTDIR}${file}" | cut -d' ' -f1)"
-							done > "${database}"/"${pkgname}"-"${version}"_"${revision}"/INSTALL
+							done > "${database}/${pkgname}-${version}_${revision}"/INSTALL
 					then
 						neko_msg success "Successfully logged files into databse"
 					else
@@ -908,18 +908,19 @@ case "${1}" in
 			else
 				./neko pkg "${arg}"
 			fi
-			export PREFIX=/usr
+			export DESTDIR=/
 			neko_msg normal "Installing ${arg}..."
 			while read -r INSTALL_LINE
 			do
 				mkdir -p\
-					"${PREFIX}""$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
-				cp -R "$(echo "${master_dir}"/"${INSTALL_LINE}" | cut -d' ' -f1)"\
-					"${PREFIX}""$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
-			done < "${database}"/"${pkgname}"/INSTALL
+					"${DESTDIR}$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
+				cp -R "${master_dir}$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"\
+					"${DESTDIR}$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
+			done < "${database}/${pkgname}-${version}_${revision}"/INSTALL
 		done
 		;;
 	"uninstall")
+		export DESTDIR=/
 		shift 1
 		case "$@" in
 			"--help" | "-h") help uninstall ;;
@@ -934,6 +935,7 @@ case "${1}" in
 		do
 			neko_msg normal "Uninstalling ${arg}..."
 			if
+				neko_prepare "${arg}"
 				neko_uninstall "${arg}"
 				neko_license_uninstall
 			then
