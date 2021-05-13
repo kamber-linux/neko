@@ -3,10 +3,34 @@
 # Installation
 The `makefile` is really more for testing as this is not complete / able to be used, yet. With that in mind, the `install` rule will install the script and man page - `make install`.
 ## Dependencies
-* POSIX shell (e.g. dash, mksh, bash, zsh)
-* POSIX utilities (e.g. cd, ln, mkdir, etc)
+`neko` makes use of POSIX utilities as much as possible. However, at the moment, there are non-POSIX utilities needed to be able to run `neko`. There are two classes of dependencies so far - POSIX and non-POSIX.
+POSIX:
+* cksum
+* sed
+* printf
+* echo
+* common shell commands - e.g. cd, if, while, read, etc
+* arithmatic expansion - $(( EXPR ))
+* find
+* cut
+* basename
+* dirname
+* od (not implemented yet, but will be used for parsing files)
+* dd (not implemented yet, but will be used to extract parsed files)
+* eval (user for parsing / possibly extracting script)
+non-POSIX:
+* seq
+* bit operations $(( 16 & 8 )) (might actually be POSIX - not sure)
+* bit shifting (not yet implemented) - e.g. $(( 8 >> 1 ))
+* GNU tar (working on replacing with od and dd commands)
 * GNU wget
-* GNU tar
+### On non-POSIX Dependencies
+The `seq` command is technically not POSIX, but appears in pretty much every userspace I can find. It's used widely enough that I'm convinced it's worth keeping for convinience. Though, I am open to changing my mind to changing instances of `seq` to an increamenting `while` loop if presented with a good argument that `seq` isn't portable enough or it's better not to depend on it.
+We are currently working on replacing GNU tar with POSIX od and dd commands. Currently, we have a working parser for gzip and one almost complete for taped archives (tar). Currently working on portable way of extracting gzip and tar format, will eventually do bz2 and xz. We are working on extracting the Huffman table from a gzip binary to use that to extract the deflate data stream. The good thing about the deflate compression method is that bz2 uses the exact same method to compress. So, once finished, all we have to do is make a parser for bz2 files and bz2 files are then done, too.
+`wget` is a bit trickier to replace with POSIX commands. First, we need to write an HTTPGET request shell script to be able to request http servers for information. Then, it would be of interest to implement this in blocks such that one can resume downloads if interrupted / etc. Then, we have to write a method for performing TLS handshakes to be able to verify certificates on https servers, which is what is recommended to use now-a-days online. Then, there's FTP - which I have no idea how to do and would appreciate help if you know anything about that.
+Trying to extract deflate data streams without bit shifting is, well... hard. However, bit shifting is present in all shells I've tested - bash, dash, mksh, zsh. Bit operations are, from what I can tell, essential to compare individual bits of a file to parse certain things in, for example, gzip.
+### Further comments
+Furthermore, just because something is POSIX doesn't mean we can expect it to be on a user's system. For example: mailx, uncompress, compress, and pax are all POSIX commands, but most of these are not commonly present on most UNIX-like systems. `neko` aims to be in that Turing Complete middle ground of POSIX and common. For that reason, you'll notice that `awk` is not used. `awk` simply isn't commonly installed on enough systems out of the box for me to justify using it, despite being a handy POSIX command. Though, I am open to changing my mind on including `awk` if it is unbelievabley appropriate / better for a certain use case.
 # Usage
 Start with copying the included templates to the directory where builds are done - `./neko init`. Then, try building one of the packages - `./neko pkg <pkg-name>`.
 # Packages
@@ -66,9 +90,9 @@ build_style="makefile"
 
 do_install()
 {
-	neko_pkg install bin build/brssl
-	neko_pkg install lib libbearssl.so
-	neko_pkg install lib libbearssl.a
+	pkg_install bin build/brssl
+	pkg_install lib libbearssl.so
+	pkg_install lib libbearssl.a
 }
 
 bearssl_devel_pkg()

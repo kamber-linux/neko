@@ -5,7 +5,7 @@ usage()
 	printf "%s\n" "usage: ${0} FILE"
 	exit
 }
-[ "$#" != "1" ] || [ ! -f "$1" ] && usage
+[ "$#" != "1" ] || [ ! -f "${1}" ] && usage
 
 # how many bytes in the file we are in
 # starts at 0
@@ -13,7 +13,8 @@ READ_COUNTER=0
 
 # usage: change VALUE (MATH EXPRESSION)
 # modify a value depending on itself
-# e.g. change INDEX + 1 + VALUE -> INDEX = INDEX + 1 + VALUE
+# e.g. - change INDEX + 1 + VALUE
+# INDEX = INDEX + 1 + VALUE
 change()
 {
 	CHANGE_VAR="${1}"
@@ -24,22 +25,54 @@ change()
 
 # usage: bytes <number of bytes> <type of read> <additional bytes counter>
 # alias out becuase we're always expecting an argument - ${1}
-# e.g. - bytes 1 x1 6 -> reads 1 x1 byte 6 bytes ahead of current READ_COUNTER
-# bytes 1 x1 0 -> current byte
+# e.g. - bytes 1 x1 6
+# reads 1 x1 byte 6 bytes ahead of current READ_COUNTER
+# e.g. - bytes 1 x1 0
+# current x1 byte
 bytes()
 {
-	od -An -N "${2}" -j "$(( READ_COUNTER + ${4} ))" -t "${3}" "${1}" | sed "s/\s*//g; /^$/ d"
+	od -An -N "${2}" -j "$(( READ_COUNTER + ${4} ))" -t "${3}" "${1}" |
+		sed "s/\s*//g; /^$/ d"
 }
 alias bytes='bytes "${1}"'
 
 # usage: read_bytes VARIABLE <number of bytes> <type of read>
-# e.g. - read_bytes os 1 u1 will store one u1 byte to os variable
+# e.g. - read_bytes os 1 u1
+# will store one u1 byte to os variable
 read_bytes()
 {
-	eval "${2}"="$(od -An -N "${3}" -j "${READ_COUNTER}" -t "${4}" "${1}" | sed "s/\s*//g; /^$/ d")"
-	change READ_COUNTER + ${3}
+	eval "${2}"="$(od -An -N "${3}" -j "${READ_COUNTER}" -t "${4}" "${1}" |
+		sed "s/\s*//g; /^$/ d")"
+	change READ_COUNTER + "${3}"
 }
 alias read_bytes='read_bytes "${1}"'
+
+# Read a null terminated string
+# can't use aliased functions due to variable scope - so it's messy, but works
+# e.g. - strz_process VAR
+# will process null terminated string into VAR
+strz_process()
+{
+	eval "STRING"=""
+	COUNTER_INDEX=0
+	# s/00/0 to work with suckless od
+	while [ "$(od -An -N 1 -t x1 -j "$(( READ_COUNTER + COUNTER_INDEX ))" "${1}" |
+		sed 's/\s*//g; /^$/ d; s/00/0/')" != "0" ]
+	do
+		eval STRING="${STRING}$(od -An -N 1 -t c -j\
+			"$(( READ_COUNTER + COUNTER_INDEX ))" "${1}" | sed 's/\s*//g; /^$/ d')"
+		change COUNTER_INDEX + 1
+	done
+	unset COUNTER_INDEX
+	eval "${2}"="${STRING}"
+	STRING_LENGTH="${#STRING}"
+	# + 1 for the null byte itself
+	change READ_COUNTER + STRING_LENGTH + 1
+	unset STRING
+	unset STRING_LENGTH
+	unset STRING
+}
+alias strz_process='strz_process "${1}"'
 
 read_bytes magic 2 x2
 [ "${magic}" != "8b1f" ] &&
@@ -95,6 +128,7 @@ case "${os}" in
 	*) printf "%s\n" "UNKNOWN" ;;
 esac
 
+# might be broken - need a gzip with HAS_EXTRA flag to test
 [ "${HAS_EXTRA}" = "true" ] &&
 	{
 		read_bytes len_subfields 2 u2
@@ -112,35 +146,13 @@ esac
 
 [ "${HAS_NAME}" = "true" ] &&
 	{
-		NAME=""
-		NAME_INDEX=0
-		# s/00/0 to work with suckless od
-		while [ "$(bytes 1 x1 "${NAME_INDEX}" | sed "s/00/0/g")" != "0" ]
-		do
-			NAME="${NAME}$(bytes 1 c "${NAME_INDEX}")"
-			change NAME_INDEX + 1
-		done
-		unset NAME_INDEX
-		NAME_LENGTH=${#NAME}
-		# + 1 to account for the null byte 00 (0 in this case)
-		change READ_COUNTER + NAME_LENGTH + 1
-		unset NAME_LENGTH
+		strz_process NAME
 		printf "%s\n" "NAME: ${NAME}"
 	}
 
 [ "${HAS_COMMENT}" = "true" ] &&
 	{
-		COMMENT=""
-		COMMENT_INDEX=0
-		while [ "$(bytes 1 x1 "${COMMENT_INDEX}" | sed "s/00/0/g")" != "0" ]
-		do
-			COMMENT="${COMMENT}$(bytes 1 c "${COMMENT_INDEX}")"
-			change COMMENT_INDEX + 1
-		done
-		unset COMMENT_INDEX
-		COMMENT_LENGTH=${#COMMENT}
-		change READ_COUNTER + COMMENT_LENGTH + 1
-		unset COMMENT_LENGTH
+		strz_process COMMENT
 		printf "%s\n" "COMMENT: ${COMMENT}"
 	}
 
@@ -152,6 +164,7 @@ esac
 
 COMPRESSED_SIZE=$(wc -c "${1}" | cut -d' ' -f1)
 change COMPRESSED_SIZE - READ_COUNTER - 8
+# This is where we start handling deflate data stream in the future
 #dd if="${1}" of="${OUTPUT}" ibs="${COMPRESSED_SIZE}" obs=1 seek="${READ_COUNTER}" count=1
 change READ_COUNTER + COMPRESSED_SIZE
 
@@ -161,6 +174,17 @@ change READ_COUNTER + COMPRESSED_SIZE
 read_bytes body_crc32 4 u4
 read_bytes len_uncompressed 4 u4
 # END OF FILE
+# Because the size of the uncompressed data must be able to be represented in 4
+# bytes, if the uncompressed data is bigger then 2^32 - 1, this makes for buggy
+# behaviour in both this script and gunzip -l. 2^32 - 1 bytes is about 5G
+# Will still compress / decompress as the deflate algorythm is size complete
+# (can work on arbitrary file size), just querying the file size will be broken
+# reproduce the bug in this script and gunzip -l on linux:
+# fallocate -l $(( 2 ** 32 + 1 )) FILE; gzip FILE; gunzip -l FILE.gz
+[ "${COMPRESSED_SIZE}" -gt "${len_uncompressed}" ] &&
+	len_uncompressed="OVERFLOW"
+# Still possible for undetected overflow if it loops enough
+# This is a fundamental flaw in the gzip format...
 
 printf "%s\n" "Uncompressed name: $(basename "${OUTPUT}")"
 printf "%s\n" "Compressed data size: ${COMPRESSED_SIZE}"
