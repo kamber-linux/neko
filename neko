@@ -7,12 +7,26 @@
 # Unused variables left for readability
 # shellcheck disable=SC2034
 
-root_base_dir="${DESTDIR}"/usr/local/share/neko
+# to ensure these are not inherited from the environment
+unset PREFIX
+unset DESTDIR
+unset distfiles
+unset giturl
+unset pkgname
+unset version
+unset revision
+
+[ -d /usr/local/share/neko ] && PREFIX=/usr/local
+[ -d /usr/share/neko ] && PREFIX=/usr/share
+
+root_base_dir="${PREFIX}"/share/neko
 root_pkgs_dir="${root_base_dir}"/srcpkgs
 root_src_dir="${root_base_dir}"/src
 root_master_dir="${root_base_dir}"/master
 root_license_dir="${root_base_dir}"/licenses
 root_db_dir="${root_base_dir}"/db
+# Done with PREFIX here
+unset PREFIX
 
 base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
 pkgs_dir="${base_dir}"/srcpkgs
