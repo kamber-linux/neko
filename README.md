@@ -4,6 +4,7 @@
 The `makefile` is really more for testing as this is not complete / able to be used, yet. With that in mind, the `install` rule will install the script and man page - `make install`.
 ## Dependencies
 `neko` makes use of POSIX utilities as much as possible. However, at the moment, there are non-POSIX utilities needed to be able to run `neko`. There are two classes of dependencies so far - POSIX and non-POSIX.
+
 POSIX:
 * cksum
 * sed
@@ -18,6 +19,7 @@ POSIX:
 * od (not implemented yet, but will be used for parsing files)
 * dd (not implemented yet, but will be used to extract parsed files)
 * eval (user for parsing / possibly extracting script)
+
 non-POSIX:
 * seq
 * bit operations $(( 16 & 8 )) (might actually be POSIX - not sure)
