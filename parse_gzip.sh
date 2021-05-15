@@ -174,12 +174,29 @@ change READ_COUNTER + COMPRESSED_SIZE
 read_bytes body_crc32 4 u4
 read_bytes len_uncompressed 4 u4
 # END OF FILE
-# Because the size of the uncompressed data must be able to be represented in 4
-# bytes, if the uncompressed data is bigger then 2^32 - 1, this makes for buggy
-# behaviour in both this script and gunzip -l. 2^32 - 1 bytes is about 5G
-# Will still compress / decompress as the deflate algorythm is size complete
-# (can work on arbitrary file size), just querying the file size will be broken
-# reproduce the bug in this script and gunzip -l on linux:
+# According to most anyone, and the GZIP format, len_uncompressed
+# should be the uncompressed length, however; in at least version 4.3
+# of RFC1952, it is instead defined as the length of the uncompressed
+# file modulo 2^32 (4294967296), so that files above 4GB in uncompressed
+# size will successfully compress and decompress. In fact, the reference
+# implementation of gzip had a patch for older versions that quite
+# literally removed the length error to handle files above 4GB, with the
+# modulo part of RFC1952 probably coming later to clarify this behavior.
+# In fact, the original name of the variable in the source code is ISIZE,
+# that is, input size, which doesn't aid in clearing things up. In fact,
+# some implementations do indeed still have a 4GB size limit.
+#
+# On another note, I can't seem to find any older versions or RFC1952,
+# so old code (that I haven't looked at) might be the only available
+# reference. This is a later topic of research.
+#
+# References:
+# https://web.archive.org/web/19980131081313/http://www.gzip.org/#faq10
+# http://www.zlib.org/rfc-gzip.html
+# https://stackoverflow.com/questions/2246653/need-to-compress-gz-files-which-are-greater-than-4gb-in-c-sharp
+# https://forums.asp.net/t/1761730.aspx?The+gzip+stream+can+t+contain+more+than+4GB+data
+#
+# reproduce this behavior in this script and gunzip -l on linux:
 # fallocate -l $(( 2 ** 32 + 1 )) FILE; gzip FILE; gunzip -l FILE.gz
 [ "${COMPRESSED_SIZE}" -gt "${len_uncompressed}" ] &&
 	len_uncompressed="OVERFLOW"
