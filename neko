@@ -44,6 +44,7 @@ neko_msg()
 		"success") printf "%s\n" "[1m=> [32mneko:[0m ${2}" ;;
 		"warning") printf "%s\n" "[1m=> [33mneko:[0m ${2}" ;;
 		"error") printf "%s\n" "[1m=> [31mneko:[0m ${2}" ;;
+		"prompt") printf "%s " "[1m=> [36mneko:[0m ${2}" ;;
 	esac
 }
 
@@ -906,6 +907,13 @@ case "${1}" in
 		for arg
 		do
 			neko_prepare "${arg}"
+			neko_msg prompt "Emerge ${pkgname}? [y/n]"
+			read -r choice
+			case "${choice}" in
+				"y" | "Y" | "yes" | "Yes") neko_msg normal "Emerging ${pkgname}..." ;;
+				"n" | "N" | "no" | "No") neko_msg normal "Aborting..."; exit ;;
+				*) neko_msg error "Invalid option: ${choice}"; exit ;;
+			esac
 			[ "${deps}" ] &&
 				for pkg_deps in ${deps}
 				do
@@ -947,9 +955,16 @@ case "${1}" in
 			}
 		for arg
 		do
+			neko_prepare "${arg}"
+			neko_msg prompt "Uninstall ${pkgname}? [y/n]"
+			read -r choice
+			case "${choice}" in
+				"y" | "Y" | "yes" | "Yes") neko_msg normal "Uninstalling ${pkgname}..." ;;
+				"n" | "N" | "no" | "No") neko_msg normal "Aborting..."; exit ;;
+				*) neko_msg error "Invalid option: ${choice}"; exit ;;
+			esac
 			neko_msg normal "Uninstalling ${arg}..."
 			if
-				neko_prepare "${arg}"
 				neko_uninstall "${arg}"
 				neko_license_uninstall
 			then
@@ -1114,5 +1129,5 @@ _EOF
 		;;
 	*)
 		neko_msg error "Unknown option ${1}"
-		neko_msg normal "Use neko help"
+		neko_msg normal "Use ${0} help"
 esac
