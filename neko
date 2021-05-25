@@ -167,7 +167,7 @@ _EOF
 			;;
 		"emerge")
 			cat << _EOF
-[1museage[0m
+[1musage[0m
 ${0} em <target>
 OR
 ${0} emerge <target>
@@ -538,6 +538,8 @@ neko_extract()
 	if [ -n "${distfiles}" ] || [ -n "${giturl}" ]
 	then
 		cd "${wrksrc}" || exit
+		[ -n "${commit}" ] && git checkout "${commit}"
+		unset commit
 	fi
 }
 
