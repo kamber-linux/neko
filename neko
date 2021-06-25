@@ -1,1135 +1,749 @@
 #!/bin/sh
 
-# neko sources files depending on arguments
-# shellcheck source=/dev/null
-# some variables are sourced from the specified template
-# shellcheck disable=SC2154
-# Unused variables left for readability
+# Disable certain shellcheck checks
+# We follow non-constant sources - templates
+# shellcheck disable=SC1090
+# We constantly use non-constant sources by design
+# shellcheck disable=SC1091
+# We define FILES_DIR for use in templates
 # shellcheck disable=SC2034
+# We depend on vars from templates not defined here
+# shellcheck disable=SC2154
+# We know what we are doing with A && B || C
+# shellcheck disable=SC2015
 
-# to ensure these are not inherited from the environment
-unset PREFIX
-unset DESTDIR
-unset distfiles
-unset giturl
-unset pkgname
-unset version
-unset revision
+# exit codes
+# 0 - successful
+# 1 - invalid / unkown unput
+# 2 - user exit
+# 3 - missing / not found
+# 4 - command fail
 
-[ -d /usr/local/share/neko ] && PREFIX=/usr/local
-[ -d /usr/share/neko ] && PREFIX=/usr/share
+CURRENT_DIR=$(pwd)
 
-root_base_dir="${PREFIX}"/share/neko
-root_pkgs_dir="${root_base_dir}"/srcpkgs
-root_src_dir="${root_base_dir}"/src
-root_master_dir="${root_base_dir}"/master
-root_license_dir="${root_base_dir}"/licenses
-root_db_dir="${root_base_dir}"/db
-# Done with PREFIX here
-unset PREFIX
+# Initialize bool warning flags to false
+PKGNAME_UNSET_WARNING=false
+SHORT_DESC_UNSET_WARNING=false
+REVISION_UNSET_WARNING=false
+LICENSE_UNSET_WARNING=false
+LICENSE_FILE_UNSET_WARNING=false
+LICENSE_INVALID_WARNING=false
+LICENSE_INSTALL_FAIL_WARNING=false
 
-base_dir="${XDG_DATA_HOME:-$HOME/.local/share}"/neko
-pkgs_dir="${base_dir}"/srcpkgs
-src_dir="${base_dir}"/src
-master_dir="${base_dir}"/master
-licenses_dir="${base_dir}"/licenses
-db_dir="${base_dir}"/db
+# e.g.:
+# msg normal "My message"
+# prints "My message" in neko message format
+# msg error "Package not found" 3
+# errors out "Package not found" and exit with code 3
+msg()
+{
+	case $1 in
+		normal) printf "%s\n" "[1m=> [36mneko[0m: $2" ;;
+		success) printf "%s\n" "[1m=> [32mneko[0m: $2" ;;
+		error) printf "%s\n" "[1m=> [31mneko[0m: $2"; exit "$3" ;;
+		warning) printf "%s\n" "[1m=> [33mneko[0m: $2" ;;
+		prompt) printf "%s %s " "[1m=> [35mneko[0m: $2" "[y/n]" ;;
+	esac
+}
+
+# handle flags / switches
+SKIP=false
+HELP=false
+USAGE=false
+INSTALL_DIR=
+REPO=
+VARIABLE=
+VALUE=
+args=
+while [ $# -gt 0 ]
+do
+	case $1 in
+		-[Yy] | --[Yy]es)
+			VARIABLE=SKIP
+			VALUE=true
+			shift
+			;;
+		-[Hh] | --[Hh]elp)
+			VARIABLE=HELP
+			VALUE=true
+			shift
+			;;
+		--[Rr]epo | --[Rr]epository)
+			[ $# -lt 2 ] && msg error "Missing value for ${1#--}" 3
+			VARIABLE=REPO
+			VALUE=$2
+			shift 2
+			;;
+		--[Rr]epo?=* | --[Rr]epository)
+			VARIABLE=REPO
+			VALUE=${1#*=}
+			shift
+			;;
+		--[Ii]nstall-[Dd]irectory | --[Ii]nstall-[Dd]ir | --[Ii]nstall[Dd]ir |\
+			--[Ii]nstall[Dd]irectory)
+			[ $# -lt 2 ] && msg error "Missing value for ${1#--}" 3
+			VARIABLE=INSTALL_DIR
+			VALUE=$2
+			shift 2
+			;;
+		--[Ii]nstall-[Dd]irectory=* | --[Ii]nstall-[Dd]ir=* | --[Ii]nstall[Dd]ir=* |\
+			--[Ii]nstall[Dd]irectory)
+			VARIABLE=INSTALL_DIR
+			VALUE=${1#*=}
+			shift
+			;;
+		--[Uu]sage | -[Uu])
+			VARIABLE=USAGE
+			VALUE=true
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			msg error "Unknown option: $1" 1
+			;;
+		*)
+			VARIABLE=args
+			VALUE="$args $1"
+			shift
+			;;
+	esac
+	eval "$VARIABLE"='"$VALUE"'
+done
+eval set -- "$args" '"$@"'
 
 trap interrupt 2
-
-neko_msg()
+interrupt()
 {
-	case "${1}" in
-		"normal") printf "%s\n" "[1m=> [36mneko:[0m ${2}" ;;
-		"success") printf "%s\n" "[1m=> [32mneko:[0m ${2}" ;;
-		"warning") printf "%s\n" "[1m=> [33mneko:[0m ${2}" ;;
-		"error") printf "%s\n" "[1m=> [31mneko:[0m ${2}" ;;
-		"prompt") printf "%s " "[1m=> [36mneko:[0m ${2}" ;;
-	esac
+	# To have new line
+	echo
+	msg error "Command interrupted" 2
 }
 
 usage()
 {
-	case "${1}" in
-		"neko")
+	case $1 in
+		neko)
 			cat << _EOF
 [1musage[0m
-${0} command [target]
+$0 COMMAND [TARGET]
 
-See ${0} --help
+See $0 --help
 _EOF
 			;;
-		"pkg")
+		help)
 			cat << _EOF
 [1musage[0m
-${0} pkg <target>
+$0 help COMMAND
 
-See ${0} pkg --help
+See $0 help --help
 _EOF
 			;;
-		"emerge")
+		pkg)
 			cat << _EOF
 [1musage[0m
-${0} em <target>
-OR
-${0} em <target>
+$0 pkg PKG
+$0 package PKG
 
-See ${0} em --help
-OR
-See ${0} emerge --help
+See $0 pkg --help
 _EOF
 			;;
-		"uninstall")
+		emerge)
 			cat << _EOF
 [1musage[0m
-${0} uninstall <target>
+$0 em PKG
+$0 emerge PKG
 
-See ${0} uninstall --help
-_EOF
-			;;
-		"find")
-			cat << _EOF
-[1musage[0m
-${0} find <target>
-
-See ${0} find --help
+See $0 emerge --help
 _EOF
 			;;
 	esac
-exit
+	exit
 }
 
 help()
 {
-	case "${1}" in
-		"neko")
+	case $1 in
+		neko)
 			cat << _EOF
 [1musage[0m
-${0} command [target]
+$0 COMMAND [TARGET]
 
-[1mcommand[0m:
-init
-	Initializes the environment for use with the templates - must be run before
-	packaging from templates.
-pkg <target>
-	Checks to see if the <target> can be properly packaged from the template.
-em | emerge <target>
-	Emerges the <target>. Will build and install it to the system.
-uninstall <target>
-	Will uninstall <target> from the system.
-find <target>
-	Will search for the <target>
-clean
-	Cleans up the master directory.
-zap
-	Will remove everything from the neko directory - you must run neko init
-	after doing so.
-help [command]
-	Displays this message, or help [command] to get help on [command]
+[1mCOMMAND[0m
+help COMMAND
+	Shows information about a command.
+	See $0 help --help for more information.
 
-[1mstatus[0m:
-Neko will have different colors depending on the status:
-$(neko_msg normal "This is a normal message.")
-$(neko_msg success "This is a successful message.")
-$(neko_msg warning "This is a warning message.")
-$(neko_msg error "This is an error message.")
+pkg PKG
+package PKG
+	Will download, build, and install PKG to an empty DESTDIR based off of the
+	template for PKG in srcpkgs. Multiple arguments can be specified to PKG.
+	See $0 pkg --help for more information.
+
+em PKG
+emerge PKG
+	Will call the package step and install the packaged files to the system.
+	See $0 em --help for more information.
 _EOF
 			;;
-		"init")
+		help)
 			cat << _EOF
 [1musage[0m
-${0} init
+$0 help COMMAND
 
-init
-	Copies the srcpkgs directory, licenses directory, and makes the src and master
-	directory in \${XDG_DATA_HOME:-\$HOME/.local/share}/neko. Run this once to
-	initialize the process of packaging software. To make changes for your local
-	system, change the templates in the created directory. To make changes for a
-	pull request / upstream change, change the files in the neko git repo.
+help COMMAND
+	Will show information of a command, what is does, the usage, and other
+	information that may be helpful.
 _EOF
 			;;
-		"pkg")
+		pkg | package)
 			cat << _EOF
 [1musage[0m
-${0} pkg <target>
+$0 pkg PKG
+$0 package PKG
 
-pkg
-	Will download, build, and install <target> from srcpkgs to an empty DESTDIR
-	based off of the package's template. This step is invoked before the emerge
-	step as it also sets up the INSTALL log which contains information on what was
-	installed to the empty DESTDIR. ${0} pkg will first do this to the templates
-	"deps" if it has any.
-
-	Multiple arguments can be given to ${0} pkg and they will execute in the order
-	that ${0} pkg is given. It is recommended to only pass one argument for the
-	time being as multiple arguments currently is bugged.
+pkg PKG
+package PKG
+	Will first look for a template for PKG in srcpkgs in the order of: ./srcpkgs,
+	/usr/share/neko/srcpkgs. If it finds it, then, according to the template for
+	PKG, will go and fetch the source code for PKG. Then, it will extract PKG or
+	change commit if it's a git package. Then, it will apply all of the patches
+	for the template in that PKG patches folder. Then, it will build the package
+	and install the package into the ROOT_DIR, which acts as an empty DESTDIR to
+	track which files got moved.
 _EOF
 			;;
-		"emerge")
+		em | emerge)
 			cat << _EOF
 [1musage[0m
-${0} em <target>
-OR
-${0} emerge <target>
+$0 em PKG
+$0 emerge PKG
 
-em | emerge
-	Will first run ${0} pkg <target>. This builds and installs to empty DESTDIR to
-	make an INSTALL log (see ${0} help pkg for more details). It will run
-	${0} pkg <target> for all of the "deps" if there are any. It then exports
-	PREFIX to "/" and copies the files from the INSTALL log from the pkg step. It
-	will do this for everything in "deps" if there are any.
-
-	Multiple arguments can be given to ${0} em and they will execute in the order
-	that ${0} em is given. It is recommended to only pass one argument for the
-	time being as multiple arguments currently is bugged.
+em PKG
+emerge PKG
+	Will first execute $0 pkg PKG to build and log an install to an empty master
+	directory. Then, using the information from that database made my $0 pkg PKG,
+	will install PKG to install-dir, default / if not set.
 _EOF
 			;;
-		"uninstall")
+		clean)
 			cat << _EOF
 [1musage[0m
-${0} uninstall <target>
-
-uninstall
-	Will remove files from PREFIX (/) based off of the INSTALL log made from the
-	pkg step.
-_EOF
-			;;
-		"find")
-			cat << _EOF
-[1musage[0m
-${0} find <target>
-
-find
-	Will search in pkgs_dir (made after running ${0} init) for <target> and
-	display the package name, version, revision, and the short decription of
-	<target>.
-
-	Multiple arguments can be given to ${0} find
-_EOF
-			;;
-		"new")
-			cat << _EOF
-[1musage[0m
-${0} new <target>
-_EOF
-			;;
-		"clean")
-			cat << _EOF
-[1musage[0m
-${0} clean
+$0 clean
 
 clean
-	Will remove files from the empty DESTDIR (the master directory) and files from
-	the source directory (src, where the source code gets downloaded).
+	If running from the repo, will clean everything in ./master/root,
+	./master/src, and ./master/db. If installed and running as root, will clean
+	the master root and source directories of the system.
 _EOF
 			;;
-		"zap")
-			cat << _EOF
-[1musage[0m
-${0} zap
-
-zap
-	Like ${0} clean, but stronger. Will remove EVERYTHING from the neko directory
-	in \${XDG_DATA_HOME:-\$HOME}/.local/share/neko. You will need to run ${0} init
-	again if you want to package something locally.
-_EOF
-			;;
-		"help")
-			cat << _EOF
-[1musage[0m
-${0} help [command]
-
-help
-	Displays help for [command]. If no argument is given, it is equivalent to
-	${0} help neko.
-_EOF
+		*)
+			msg warning "Can't get help for unknown command: $1" 1
+			msg normal "See $0 --help for a list of commands."
 			;;
 	esac
-exit
+	exit
 }
 
-interrupt()
+# Prepares environment
+# Gets info from template
+package_init()
 {
-	# to start on a new line
-	echo ""
-	neko_msg error "Command interrupted"
-	exit 2
-}
-
-# pkg_install are only used in templates
-pkg_install()
-{
-	case "${1}" in
-		"bin")
-			echo "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}${PREFIX}"/bin
-				cp -R "${2}" "${DESTDIR}${PREFIX}"/bin
-				chmod 755 "${DESTDIR}${PREFIX}/bin/$(basename "${2}")"
-			then
-				echo "Successfully installed ${2}"
-			else
-				echo "Failed to install ${2}"
-			fi
-			;;
-		"man")
-			echo "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}${PREFIX}/share/man/man${3:-1}"
-				cp -R "${2}" "${DESTDIR}${PREFIX}/share/man/man${3:-1}"
-				chmod 644 "${DESTDIR}${PREFIX}/share/man/man${3:-1}/$(basename "${2}")"
-			then
-				echo "Successfully installed ${2}"
-			else
-				echo "Failed to install ${2}"
-			fi
-			;;
-		"lib")
-			[ "${2}" = "pkgconfig" ] &&
-				{
-					find . -name "*.pc" |
-						while read -r line
-						do
-							printf "%s\n" "Installing $(basename "${line}")..."
-							if
-								mkdir -p "${DESTDIR}${PREFIX}"/lib/pkgconfig
-								cp -R "${line}" "${DESTDIR}${PREFIX}/lib/pkgconfig/$(basename "${line}")"
-								chmod 755 "${DESTDIR}${PREFIX}/lib/pkgconfig/$(basename "${line}")"
-							then
-								printf "%s\n" "Successfully installed ${line}"
-							else
-								printf "%s\n" "Failed to install ${line}"
-							fi
-						done
-						return
-				}
-			find . -name "${2}" |
-				while read -r line
-				do
-					printf "%s\n" "Installing $(basename "${line}")..."
-					if
-						mkdir -p "${DESTDIR}${PREFIX}"/lib
-						cp -R "${line}" "${DESTDIR}${PREFIX}"/lib
-						chmod 755 "${DESTDIR}${PREFIX}/lib/$(basename "${line}")"
-					then
-						printf "%s\n" "Successfully installed ${line}"
-					else
-						printf "%s\n" "Failed to install ${line}"
-					fi
-				done
-			;;
-		"inc")
-			printf "%s\n" "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}${PREFIX}"/include
-				cp -R "${2}" "${DESTDIR}${PREFIX}"/include
-				# FIXME
-				# If it runs on a folder, chaos happens with permissions
-				# Fix will probably involve the find command
-				#chmod 644 "${DESTDIR}${PREFIX}"/include/"$(basename "${2}")"
-			then
-				printf "%s\n" "Successfully installed ${2}"
-			else
-				printf "%s\n" "Failed to install ${2}"
-			fi
-			;;
-		"conf")
-			echo "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}${PREFIX}/etc${3}"
-				cp -R "${2}" "${DESTDIR}${PREFIX}/etc${3}"
-				chmod 644 "${DESTDIR}${PREFIX}/etc${3}/$(basename "${2}")"
-			then
-				echo "Successfully installed ${2}"
-			else
-				echo "Failed to install ${2}"
-			fi
-			;;
-		"file")
-			pkg_install file README 644 /usr/share/doc
-			echo "Installing $(basename "${2}")..."
-			if
-				mkdir -p "${DESTDIR}${PREFIX}${4}"
-				cp -R "${2}" "${DESTDIR}${PREFIX}${4}"
-				chmod "${3}" "${DESTDIR}${PREFIX}${4}/${2}"
-			then
-				echo "Successfully installed $(basename "${2}")"
-			else
-				echo "Failed to install $(basename "${2}")"
-			fi
-			;;
-	esac
-}
-
-neko_init()
-{
-	for dir in "${base_dir}" "${pkgs_dir}" "${src_dir}" "${master_dir}"\
-		"${licenses_dir}" "${db_dir}"
+	# Clear vars and functions
+	for var in pkgname short_desc deps version commit revision distfiles giturl\
+		wrksrc build_style configure_args build_args install_args CC YACC license\
+		license_file
 	do
-		[ ! -d "${dir}" ] && neko_msg normal "Making dir ${dir}..." &&
-			if
-				mkdir -p "${dir}"
-			then
-				neko_msg success "Successfully made dir ${dir}"
-			else
-				neko_msg error "Failed to make dir ${dir}"
-				exit
-			fi
+		unset "$var"
 	done
-	neko_msg normal "Copying base srcpkgs to ${base_dir}..."
-	if
-		cp -R srcpkgs "${base_dir}"
-	then
-		neko_msg success "Successfully copied base srcpkgs to ${base_dir}"
-	else
-		neko_msg error "Failed to copy base srcpkgs to ${base_dir}"
-		exit
-	fi
-	neko_msg normal "Copying licenses to ${base_dir}..."
-	if
-		cp -R licenses "${base_dir}"
-	then
-		neko_msg success "Successfully copied licenses to ${base_dir}"
-	else
-		neko_msg error "Failed to copy licenses to ${base_dir}..."
-		exit
-	fi
-}
-
-neko_zap()
-{
-	neko_msg normal "Zapping neko directory ${base_dir}..."
-	if
-		rm -rf "${base_dir:?}"/*
-	then
-		neko_msg success "Successfully zapped neko directory"
-	else
-		neko_msg error "Failed to zap neko directory"
-		exit
-	fi
-
-}
-
-neko_prepare()
-{
-	[ ! -d "${pkgs_dir}" ] && [ ! -d "${root_pkgs_dir}" ] &&
+	for function in pre_build do_build do_install
+	do
+		unset -f "$function"
+	done
+	[ -d "$CURRENT_DIR"/srcpkgs ] &&
 		{
-			neko_msg error "No base srcpkgs found in ${base_dir}"
-			neko_msg normal "Run ${0} init"
-			exit
-		}
-	[ ! -d "${master_dir}" ] && [ ! -d "${root_master_dir}" ] &&
-		{
-			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run ${0} init"
-			exit
-		}
-	[ ! -d "${src_dir}" ] && [ ! -d "${root_src_dir}" ] &&
-		{
-			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run ${0} init"
-			exit
-		}
-	[ ! -d "${licenses_dir}" ] && [ ! -d "${root_license_dir}" ] &&
-		{
-			neko_msg error "No master dir found in ${base_dir}"
-			neko_msg normal "Run ${0} init"
-			exit
-		}
-	[ ! -d "${db_dir}" ] && [ ! -d "${root_db_dir}" ] &&
-		{
-			neko_msg error "No databse dir found in ${base_dir}"
-			neko_msg normal "Run ${0} init"
-			exit
-		}
-	if [ -f "${pkgs_dir}"/"${1}"/template ]
-	then
-		template_file="${pkgs_dir}"/"${1}"/template
-		patches_dir="${pkgs_dir}"/"${1}"/patches
-		files_dir="${pkgs_dir}"/"${1}"/files
-		source_dir="${src_dir}"
-		database="${base_dir}"/db
-	elif [ -f "${root_pkgs_dir}"/"${1}"/template ]
-	then
-		template_file="${root_pkgs_dir}"/"${1}"/template
-		patches_dir="${root_pkgs_dir}"/"${1}"/patches
-		files_dir="${root_pkgs_dir}"/"${1}"/files
-		source_dir="${root_src_dir}"
-		database="${root_base_dir}"/db
-	else
-		neko_msg error "No template found for ${1}"
-		exit
-	fi
-	. "${template_file}"
-	if [ "${distfiles}" ]
-	then
-		wrksrc="${pkgname}"-"${version}"
-	elif [ "${giturl}" ]
-	then
-		wrksrc="$(echo "${pkgname}" | sed 's/-git//')"
-	fi
-	archive="${distfiles##*/}"
-	# Allow override of wrksrc and archive from the template
-	. "${template_file}"
-}
-
-neko_fetch()
-{
-	# Remove duplicate wrksrc
-	{
-		[ -n "${distfiles}" ] || [ -n "${giturl}" ]
-	} && [ -d "${source_dir}"/"${wrksrc}" ] && [ "${build_style}" != "meta" ] &&
-		rm -rf "${source_dir:?}"/"${wrksrc:?}"
-	# Remove duplicate archive
-	[ "${distfiles}" ] && [ -f "${source_dir}"/"${archive}" ] &&
-		[ "${build_style}" != "meta" ] && rm -rf "${source_dir:?}"/"${archive:?}"
-	cd "${source_dir}" || exit
-	[ "${build_style}" = "meta" ] && return
-	neko_msg normal "Downloading source for ${1}..."
-	if [ "${distfiles}" ]
-	then
-		if
-			wget "${distfiles}"
-		then
-			neko_msg success "Successfully fetched distfiles for ${1}"
-		else
-			neko_msg error "Failed to fetch distfiles for ${1}"
-			exit
-		fi
-	elif [ "${giturl}" ]
-	then
-		if
-			git clone "${giturl}"
-		then
-			neko_msg success "Successfully cloned git repo for ${1}"
-		else
-			neko_msg error "Failed to clone git repo for ${1}"
-			exit
-		fi
-	else
-		[ "${build_style}" != "meta" ] &&
+			BASE_DIR=$CURRENT_DIR
+			PKGS_DIR=$BASE_DIR/srcpkgs
+			DB_DIR=$BASE_DIR/master/db
+		} ||
 			{
-				neko_msg warning "No distfiles or giturl specified"
-				return
+				BASE_DIR=/usr/share/neko
+				PKGS_DIR=$BASE_DIR/srcpkgs
+				DB_DIR=/var/db/neko
 			}
-	fi
+	MASTER_DIR=$BASE_DIR/master
+	LICENSES_DIR=$MASTER_DIR/licenses
+	SRC_DIR=$MASTER_DIR/src
+	ROOT_DIR=$MASTER_DIR/root
+	PATCHES_DIR=$PKGS_DIR/$1/patches
+	FILES_DIR=$PKGS_DIR/$1/files
+	[ ! -f "$PKGS_DIR/$1"/template ] && msg error "No template found for $1" 3
+	. "$PKGS_DIR/$1"/template
+	[ -z "$pkgname" ] && PKGNAME_UNSET_WARNING=true
+	[ -z "$short_desc" ] && SHORT_DESC_UNSET_WARNING=true
+	[ -z "$revision" ] && REVISION_UNSET_WARNING=true
+	[ -n "$distfiles" ] && archive=${archive:-${distfiles##*/}}
+	[ -n "$distfiles" ] && wrksrc=${wrksrc:-$pkgname-$version}
+	[ -n "$giturl" ] && wrksrc=${wrksrc:-$pkgname}
+	for dir in $MASTER_DIR $SRC_DIR $ROOT_DIR
+	do
+		[ ! -d "$dir" ] && mkdir -p "$dir"
+	done
 }
 
-neko_extract()
+package_fetch()
 {
-	[ "${build_style}" = "meta" ] && return
-	[ "${distfiles}" ] && neko_msg normal "Extracting distfiles for ${1}..."
-	[ "${distfiles}" ] &&
-		if
-			case "${archive##*.}" in
-				"gz" | "tgz")
-					tar -zxvf "${archive}"
-					;;
-				"bz2" | "xz")
-					tar -xvf "${archive}"
-					;; 
-			esac
-		then
-			neko_msg success "Successfully extracted distfiles for ${pkgname}"
-		else
-			neko_msg error "Failed to extract distfiles for ${pkgname}"
-			exit
-		fi
-	if [ -n "${distfiles}" ] || [ -n "${giturl}" ]
-	then
-		cd "${wrksrc}" || exit
-		[ -n "${commit}" ] && git checkout "${commit}"
-		unset commit
-	fi
-}
-
-neko_patch()
-{
-	[ -d "${patches_dir}" ] &&
+	cd "$SRC_DIR" || exit
+	[ -n "$distfiles" ] &&
 		{
-			for patch in "${patches_dir}"/*.patch
+			[ -f "${distfiles##*/}" ] && rm -rf "${distfiles##*/}"
+			msg normal "Fetching files for $1..."
+			wget "$distfiles" && msg success "Successfully fetched files for $1" ||
+				msg error "Failed to fetch files for $1" 4
+		}
+	[ -n "$giturl" ] &&
+		{
+			[ -d "$wrksrc" ] && rm -rf "$wrksrc"
+			msg normal "Cloning repo for $1..."
+			git clone "$giturl" && msg success "Successfully cloned repo for $1" ||
+				msg error "Failed to clone repo for $1" 4
+		}
+}
+
+package_extract()
+{
+	[ -n "$distfiles" ] &&
+		{
+			msg normal "Extracting files for $1..."
+			case ${distfiles##*.} in
+				"gz" | "tgz") tar -zxf "$archive" ;;
+				"bz2" | "xz") tar -xf "$archive" ;;
+			esac && msg success "Successfully extracted files for $1" ||
+				msg error "Failed to extract files for $1" 4
+		}
+	cd "$wrksrc" || exit
+	[ -n "$commit" ] &&
+		{
+			msg normal "Switching to commit $commit..."
+			git checkout "$commit" &&
+			msg success "Successfully switched to commit $commit" ||
+				msg error "Failed to switch to commit $commit" 4
+		}
+}
+
+package_patch()
+{
+        [ -d "$PATCHES_DIR" ] &&
+		{
+			msg normal "Applying patches for $1..."
+			for patch in "$PATCHES_DIR"/*.patch
 			do
-				[ ! -f "${patch}" ] &&
+				[ ! -f "$patch" ] &&
 					{
-						neko_msg warning "There is a patches directory but no patches"
+						msg warning "There is a patches directory but no patches"
 						return
 					}
-			done
-			neko_msg normal "Applying patches for ${1}..."
-			for patch in "${patches_dir}"/*.patch
-			do
-				neko_msg normal "Applying patch ${patch##*/}..."
-				if
-					patch -Np1 < "${patch}"
-				then
-					neko_msg normal "Successfully applied patch ${patch##*/}"
-				else
-					neko_msg error "Failed to apply patch ${patch##*/}"
-					exit
-				fi
-			done
-		}
+				msg normal "Applying patch ${patch##*/}..."
+				patch -Np1 < "$patch" &&
+					msg success "Successfully applied patch ${patch##*/}" ||
+						msg error "Failed to apply patch $patch" 4
+			done &&
+				msg success "Successfully applied patches to $1"
+        	}
 }
 
-neko_build()
+# shellcheck disable=SC2086
+# disable shellcheck SC2086 here as splitting is ok in this case
+# same with package_install
+package_build()
 {
-	case "${build_style}" in
-		"meta")
+	msg normal "Building $1..."
+	export CC=${CC:-tcc}
+	export YACC=${YACC:-byacc}
+	[ -n "$(command -v pre_build)" ] &&
+		{
+			pre_build || msg error "Failed to build $1" 4
+		}
+	[ -n "$(command -v do_build)" ] &&
+		{
+			do_build &&
+				{
+					msg success "Successfully built $1"
+					return
+				} || msg error "Failed to build $1" 4
+		}
+
+	case $build_style in
+		meta)
 			:
 			;;
-		"makefile")
-			if [ "${make_build_args}" ]
-			then
-				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
-			else
-				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
-			fi
+		makefile)
+			bmake CC="$CC" YACC="$YACC" $build_args
 			;;
-		"gnu-makefile")
-			if [ "${make_build_args}" ]
-			then
-				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
-			else
-				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
-			fi
+		configure)
+			./configure --prefix=/usr $configure_args
+			bmake CC="$CC" YACC="$YACC" $build_args
 			;;
-		"configure")
-			if [ "${configure_args}" ]
-			then
-				./configure --prefix="${PREFIX}" "${configure_args}"
-			else
-				./configure --prefix="${PREFIX}"
-			fi
-			if [ "${make_build_args}" ]
-			then
-				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
-			else
-				bmake CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
-			fi
+		gnu-makefile)
+			make CC="$CC" YACC="$YACC" $build_args
 			;;
-		"gnu-configure")
-			if [ "${configure_args}" ]
-			then
-				./configure --prefix="${PREFIX}" "${configure_args}"
-			else
-				./configure --prefix="${PREFIX}"
-			fi
-			if [ "${make_build_args}" ]
-			then
-				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib "${make_build_args}"
-			else
-				make CC="${CC}" -I"${DESTDIR}${PREFIX}"/include LDFLAGS=-L"${DESTDIR}${PREFIX}"/lib
-			fi
+		gnu-configure)
+			./configure --prefix=/usr $configure_args
+			make CC="$CC" YACC="$YACC" $build_args
 			;;
-		"meson")
-			export CC=gcc # meson can only build with gcc (eww)
-			meson --prefix="${PREFIX}" build
+		meson)
+			export CC=gcc # meson can only build with gcc
+			meson --prefix=/usr build
 			ninja -C build
 			;;
-		"haskell-cabal")
-			:
+		haskell-stack)
+			stack $build_args --system-ghc --skip-ghc-check build
+			;;
+		*)
+			msg error "No build_style or do_build" 3
+			;;
+	esac && msg success "Successfully built $1" ||
+		msg error "Failed to build $1" 4
+}
+
+# Used in templates
+# Needs to be defined before package_install if a template uses it
+pkg_install()
+{
+	case $1 in
+		file)
+			# pkg_install file 755 BINARY "$PREFIX"/bin
+			mkdir -p "$DESTDIR$4"
+			cp -R "$3" "$DESTDIR$4"
+			chmod "$2" "$DESTDIR$4/$(basename "$3")"
+			;;
+		bin)
+			# pkg_install bin a.out awk
+			[ -n "$3" ] &&
+				{
+					mv "$2" "$3"
+					set -- "$1" "$3"
+				}
+			pkg_install file 755 "$2" "$PREFIX"/bin
+			;;
+		man)
+			# pkg_install man MANPAGE.1 (NUMBER)
+			pkg_install file 644 "$2" "$PREFIX/share/man/man${3:-${2##*.}}"
+			;;
+		inc)
+			# pkg_install inc header.h
+			pkg_install file "$2" "$PREFIX"/include 644
+			;;
+		doc)
+			# pkg_install doc DOC.txt
+			pkg_install 644 file "$2" "$PREFIX"/share/doc
+			;;
+		conf)
+			# pkg_install conf dot.mkshrc /skel .mkshrc
+			[ -n "$4" ] &&
+				{
+					mv "$2" "$4"
+					set -- "$1" "$4"
+				}
+			pkg_install 644 file "$2" /etc"$3"
 			;;
 	esac
 }
 
-neko_install()
+# shellcheck disable=SC2086
+package_install()
 {
-	case "${build_style}" in
-		"meta")
-			:
-			;;
-		"makefile" | "configure")
-			if [ "${make_install_args}" ]
-			then
-				bmake DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" "${make_install_args}" install
-			else
-				bmake DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" install
-			fi
-			;;
-		"gnu-makefile" | "gnu-configure")
-			if [ "${make_install_args}" ]
-			then
-				make DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" "${make_install_args}" install
-			else
-				make DESTDIR="${DESTDIR}" PREFIX="${PREFIX}" install
-			fi
-			;;
-		"meson")
-			DESTDIR="${DESTDIR}" ninja -C build install
-			;;
-		"haskell-cabal")
-			cabal update
-			cabal install
-			;;
-	esac
-}
-
-neko_license_install()
-{
-	[ -z "${license}" ] &&
+	msg normal "Installing $1..."
+	DESTDIR=$ROOT_DIR
+	PREFIX=/usr
+	[ -n "$(command -v do_install)" ] &&
 		{
-			neko_msg warning "No license specified for ${pkgname}"
+			do_install &&
+				{
+					msg success "Successfully installed $1"
+					return
+				} || msg error "Failed to install $1" 4
+		}
+
+	case $build_style in
+		configure | makefile)
+			bmake DESTDIR="$DESTDIR" PREFIX="$PREFIX" $install_args install
+			;;
+		gnu-configure | gnu-makefile)
+			make DESTDIR="$DESTDIR" PREFIX="$PREFIX" $install_args install
+			;;
+		meson)
+			DESTDIR="$DESTDIR" ninja -C build install
+			;;
+		haskell-stack)
+			stack --local-bin-path="$DESTDIR"/usr/bin ${install_args} install
+			;;
+	esac && msg success "Successfully installed $1" ||
+		msg error "Failed to install $1" 4
+}
+
+package_license()
+{
+	[ -z "$license" ] &&
+		{
+			LICENSE_UNSET_WARNING=true
 			return
 		}
-	for pkg_license in ${license}
+	mkdir -p "$DESTDIR$PREFIX/share/licenses/$pkgname"
+	for pkg_license in $license
 	do
-		neko_msg normal "Installing ${pkg_license} license for ${pkgname}..."
-		if
-			case "${pkg_license}" in
-				"MIT" | "BSD-3-Clause" | "ISC" | "custom")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					for licenses in ${license_file}
-					do
-						cp -R "${licenses}" "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-						chmod 644 \
-							"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/$(basename "${licenses}")"
-					done
+		case $pkg_license in
+			MIT | BSD-3-Clause | ISC | custom)
+				[ -z "$license_file" ] && LICENSE_FILE_UNSET_WARNING=true
+				mkdir -p "$DESTDIR$PREFIX/share/licenses/$pkgname"
+				for licenses in $license_file
+				do
+					cp -R "$licenses" "$DESTDIR$PREFIX/share/licenses/$pkgname"
+					chmod 644 \
+						"$DESTDIR$PREFIX/share/licenses/$pkgname/$(basename "$licenses")"
+				done
+				;;
+			Public-Domain)
+				cp -R "$LICENSES_DIR"/UNLICENSE "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/UNLICENSE\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/UNLICENSE
+				;;
+			GPL-1.0-only | GPL-1.0-or-later)
+				cp -R "$LICENSES_DIR"/GPL-1 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/GPL-1\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/GPL-1
+				;;
+			GPL-2.0-only | GPL-2.0-or-later)
+				cp -R "$LICENSES_DIR"/GPL-2 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/GPL-2\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/GPL-2
+				;;
+			GPL-3.0-only | GPL-3.0-or-later)
+				cp -R "$LICENSES_DIR"/GPL-3 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/GPL-3\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/GPL-3
+				;;
+			LGPL-2.0-only | LGPL-2.0-or-later)
+				cp -R "$LICENSES_DIR"/LGPL-2 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/LGPL-2\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/LGPL-2
+				;;
+			LGPL-2.1-only | LGPL-2.1-or-later)
+				cp -R "$LICENSES_DIR"/LGPL-2.1 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/LGPL-2.1\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/LGPL-2.1
+				;;
+			LGPL-3.0-only | LGPL-3.0-or-later)
+				cp -R "$LICENSES_DIR"/LGPL-3 "$DESTDIR$PREFIX"/share/licenses
+				ln -sf "$DESTDIR$PREFIX"/share/licenses/LGPL-3\
+					"$DESTDIR$PREFIX/share/licenses/$pkgname/$pkg_license"
+				chmod 644 "$DESTDIR$PREFIX"/share/licenses/LGPL-3
+				;;
+			*)
+				LICENSE_INVALID_WARNING=true
+				return
+				;;
+		esac
+	done || LICENSE_INSTALL_FAIL_WARNING=true
+}
+
+[ $USAGE = true ] &&
+	{
+		[ $# -gt 1 ] && usage usage
+		[ $# = 1 ] && usage "$1"
+		[ -z "$1" ] && usage neko
+	}
+[ $HELP = true ] &&
+	{
+		[ $# -gt 1 ] && usage help
+		[ $# = 1 ] && help "$1"
+		[ -z "$1" ] && help neko
+	}
+[ -z "$1" ] && usage neko
+
+case $1 in
+	usage)
+		shift
+		[ $# -gt 1 ] && usage usage
+		[ -z "$1" ] && usage neko
+		usage "$1"
+		;;
+	help)
+		shift
+		[ $# -gt 1 ] && usage help
+		[ -z "$1" ] && help neko
+		help "$1"
+		;;
+	pkg | package)
+		shift
+		[ -z "$1" ] && usage pkg
+		for arg
+		do
+			package_init "$arg"
+			[ -n "$(command -v "$(printf "%s" "$arg" | sed 's/\-/\_/g'; )"_pkg)" ] &&
+				{
+					"$(printf "%s" "$arg" | sed 's/\-/\_/g')_pkg"
+					pkgname=$arg
+				}
+			printf "%s\n" "PKG: $pkgname DEPS: $deps - PKG"
+			for pkg_deps in $deps
+			do
+				$0 pkg "$pkg_deps"
+			done
+			for step in fetch extract patch build install license
+			do
+				printf "%s\n" "STEP: $step PKG: $pkgname DEPS: $deps"
+				package_"$step" "$arg"
+			done
+			#package_fetch "$arg"
+			#package_extract "$arg"
+			#package_patch "$arg"
+			#package_build "$arg"
+			#package_install "$arg"
+			#package_license "$arg"
+			# FIXME
+			# Need to recursively do this such that if a directory only contains empty
+			# directories, this step will get rid of that, too - and so on
+			# find "$ROOT_DIR" -type d |
+			#	while read -r line
+			#	do
+			#		[ -z "$(ls "$line")" ] &&
+			#			{
+			#				msg warning "Removing empty directory $line..."
+			#				rm -rf "$line"
+			#			}
+			#	done
+			# FIXME
+			# Still need a way to only log files from arg and not from previous packages
+			# that were packaged. e.g. so that ./neko pkg st dwm does not result in the
+			# package for dwm having files for dwm, all dwm deps, st, and all st deps
+			# Basically, need a way to only log NEW files
+			msg normal "Packaging $arg..."
+			rm -rf "${DB_DIR:?}/$pkgname"
+			mkdir -p "$DB_DIR/$pkgname"
+			find "$ROOT_DIR" -type f,l | sed "s|$ROOT_DIR/||" |
+				while read -r file
+				do
+					printf "%s\n" "$file $([ -f "$file" ] && cksum "$ROOT_DIR/$file" | cut -d' ' -f1)"
+				done > "$DB_DIR/$pkgname/INSTALL" &&
+					msg success "Successfully packaged $arg" ||
+						msg error "Failed to package $arg" 4
+			# Show warnings at the end
+			[ $PKGNAME_UNSET_WARNING = true ] && msg warning "No pkgname set for $arg"
+			[ $SHORT_DESC_UNSET_WARNING = true ] &&
+				msg warning "No short_desc set for $arg"
+			[ $REVISION_UNSET_WARNING = true ] && msg warning "No revision set for $arg"
+			[ $LICENSE_UNSET_WARNING = true ] && msg warning "No license set for $arg"
+			[ $LICENSE_FILE_UNSET_WARNING = true ] &&
+				msg warning "No license_file for $license license set for $arg"
+			[ $LICENSE_INVALID_WARNING = true ] &&
+				msg warning "Invalid license $license set for $arg"
+			[ $LICENSE_INSTALL_FAIL_WARNING = true ] &&
+				msg warning "Failed to install $license license for $arg"
+			cd "$CURRENT_DIR" || exit
+		done
+		;;
+	em | emerge)
+		shift
+		[ -z "$1" ] && usage emerge
+		for arg
+		do
+			package_init "$arg"
+			[ $SKIP = false ] &&
+				{
+					msg prompt "Emerge $pkgname?"
+					read -r RESPONSE
+				}
+			[ $SKIP = false ] && case $RESPONSE in
+				[Yy] | [Yy]es)
+					:
 					;;
-				"Public-Domain")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/Public-Domain "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/Public-Domain
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/Public-Domain \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"Apache-2.0")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/Apache-2 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/Apache-2
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/Apache-2 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"GPL-1.0-only" | "GPL-1.0-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/GPL-1 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/GPL-1
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/GPL-2 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"GPL-2.0-only" | "GPL-2.0-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/GPL-2 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/GPL-2
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/GPL-2 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"GPL-3.0-only" | "GPL-3.0-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/GPL-3 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/GPL-3
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/GPL-3 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"AGPL-3.0-only" | "AGPL-3.0-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/AGPL-3 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/AGPL-3
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/AGPL-3 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"LGPL-2-only" | "LGPL-2-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/LGPL-2 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/LGPL-2
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/LGPL-2 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"LGPL-2.1-only" | "LGPL-2.1-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/LGPL-2.1 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/LGPL-2.1
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/LGPL-2.1 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
-					;;
-				"LGPL-3-only" | "LGPL-3-or-later")
-					mkdir -p "${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-					cp -R "${licenses_dir}"/LGPL-3 "${DESTDIR}${PREFIX}"/share/licenses
-					chmod 644 "${DESTDIR}${PREFIX}"/share/licenses/LGPL-3
-					ln -sf "${DESTDIR}${PREFIX}"/share/licenses/LGPL-3 \
-						"${DESTDIR}${PREFIX}/share/licenses/${pkgname}/${pkg_license}"
+				[Nn] | [Nn]o)
+					msg error "Aborting!" 2
 					;;
 				*)
-					neko_msg error "${pkg_license} is not a valid license name"
-					exit
+					msg warning "Invalid response: $RESPONSE"
+					msg error "Aborting!" 1
 					;;
 			esac
-		then
-			neko_msg success "Successfully installed ${pkg_license} license for ${pkgname}"
-			neko_msg normal "The ${pkg_license} license for ${pkgname} can be found in:
-${DESTDIR}${PREFIX}/share/licenses/${pkgname}"
-		else
-			neko_msg error "Failed to install ${pkg_license} license for ${pkgname}"
-			exit
-		fi
-	done
-}
-
-neko_uninstall()
-{
-	while read -r pkg_file
-	do
-		rm -rf "${DESTDIR:?}${pkg_file}"
-	done < "${database}/${pkgname}-${version}_${revision}"/INSTALL
-}
-
-neko_license_uninstall()
-{
-	for pkg_license in ${license}
-	do
-		neko_msg normal "Uninstalling ${pkg_license} license for ${pkgname}..."
-		if
-			rm -rf "${DESTDIR:?}"/usr/local/share/licenses/"${pkgname}"
-		then
-			neko_msg success "Successfully removed ${pkg_license} license for ${pkgname}"
-		else
-			neko_msg error "Failed to remove ${pkg_license} license for ${pkgname}"
-			exit
-		fi
-	done
-}
-
-[ -z "${1}" ] && usage neko
-
-case "${1}" in
-	"init")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help init ;;
-		esac
-		neko_init
-		;;
-	"pkg")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help pkg ;;
-		esac
-		[ -z "${1}" ] && usage pkg
-		for arg
-		do
-			if
-				neko_prepare "${arg}"
-				if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
-				then
-					"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
-				fi
-				[ "${build_style}" = "meta" ] || neko_msg normal "Preparing environment..."
-				[ "${deps}" ] &&
-					for pkg_dep in ${deps}
-					do
-						if [ -n "$(command -v neko)" ]
-						then
-							neko pkg "${pkg_dep}"
-						else
-							./neko pkg "${pkg_dep}"
-						fi
-					done
-				export CC="${CC:-tcc}"
-				export DESTDIR="${master_dir}"
-				export PREFIX=/usr
-				export PATH="$PATH:${DESTDIR}${PREFIX}/bin"
-				for step in fetch extract patch
-				do
-					neko_"${step}" "${arg}"
-				done
-				[ "${build_style}" = "meta" ] || neko_msg normal "Building ${arg}..." &&
-					if
-						if [ -n "$(command -v do_build)" ]
-						then
-							do_build "${arg}"
-							unset -f do_build
-						else
-							neko_build "${arg}"
-						fi
-					then
-						neko_msg success "Successfully built ${arg}"
-					else
-						neko_msg error "Failed to build ${arg}"
-						break
-						exit
-					fi
-				neko_msg normal "Installing ${arg}..."
-				if
-					if [ -n "$(command -v do_install)" ]
-					then
-						do_install "${arg}"
-						unset -f do_install
-					else
-						neko_install "${arg}"
-					fi
-					[ -n "$(command -v post_install)" ] &&
-						{
-							post_install
-							unset -f post_install
-						}
-					neko_license_install
-				then
-					neko_msg success "Successfully installed ${arg}"
-					neko_msg normal "Logging files into pkg database..."
-					if
-						mkdir -p "${database}"/"${pkgname}"-"${version}"_"${revision}"
-						# FIXME
-						# Need a way to specify only files from ${arg}
-						# Removing after every pkg will remove dependencies...
-						# Solution possibly involves using diff with previous INSTALL log
-						find "${DESTDIR}" -type f | sed "s|${DESTDIR}||" |
-							while read -r file
-							do
-								printf "%s %s\n" "${file}" "$(cksum "${DESTDIR}${file}" | cut -d' ' -f1)"
-							done > "${database}/${pkgname}-${version}_${revision}"/INSTALL
-					then
-						neko_msg success "Successfully logged files into databse"
-					else
-						neko_msg error "Failed to log files into database"
-						exit
-					fi
-				else
-					neko_msg error "Failed to install ${arg}"
-					break
-					exit
-				fi
-			then
-				neko_msg success "${arg} is able to be packaged"
-			else
-				neko_msg error "${arg} is not able to be packaged"
-				exit
-			fi
-		done
-		;;
-	"em" | "emerge")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help emerge ;;
-		esac
-		[ -z "${1}" ] && usage emerge
-		[ "$(id -u)" != "0" ] &&
-			{
-				neko_msg error "You must have root permissions to run this command"
-				exit
-			}
-		for arg
-		do
-			neko_prepare "${arg}"
-			neko_msg prompt "Emerge ${pkgname}? [y/n]"
-			read -r choice
-			case "${choice}" in
-				"y" | "Y" | "yes" | "Yes") neko_msg normal "Emerging ${pkgname}..." ;;
-				"n" | "N" | "no" | "No") neko_msg normal "Aborting..."; exit ;;
-				*) neko_msg error "Invalid option: ${choice}"; exit ;;
-			esac
-			[ "${deps}" ] &&
-				for pkg_deps in ${deps}
-				do
-					if [ -n "$(command -v neko)" ]
-					then
-						neko em "${pkg_dep}"
-					else
-						./neko em "${pkg_dep}"
-					fi
-				done
-			if [ -n "$(command -v neko)" ]
-			then
-				neko pkg "${arg}"
-			else
-				./neko pkg "${arg}"
-			fi
-			export DESTDIR=/
-			neko_msg normal "Installing ${arg}..."
-			while read -r INSTALL_LINE
+			printf "%s\n" "PKGNAME: $pkgname DEPS: $deps - EM"
+			$0 pkg "$arg"
+			for pkg_deps in $deps
 			do
-				mkdir -p\
-					"${DESTDIR}$(dirname "$(echo "${INSTALL_LINE}" | cut -d' ' -f1)")"
-				cp -R "${master_dir}$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"\
-					"${DESTDIR}$(echo "${INSTALL_LINE}" | cut -d' ' -f1)"
-			done < "${database}/${pkgname}-${version}_${revision}"/INSTALL
+				$0 em -y --install-dir="$INSTALL_DIR" "$pkg_deps"
+			done
+			mkdir -p "$INSTALL_DIR"
+			export DESTDIR="$INSTALL_DIR"
+                        msg normal "Emerging $arg..."
+                        while read -r INSTALL_LINE
+                        do
+                                mkdir -p\
+                                        "$INSTALL_DIR/$(dirname "$(printf "%s" "$INSTALL_LINE" | cut -d' ' -f1)")"
+                                cp -R "$ROOT_DIR/$(printf "%s" "$INSTALL_LINE" | cut -d' ' -f1)"\
+                                        "$INSTALL_DIR/$(printf "%s" "$INSTALL_LINE" | cut -d' ' -f1)"
+                        done < "$DB_DIR/$pkgname"/INSTALL &&
+				msg success "Successfully emerged $arg" ||
+					msg error "Failed to emerge $arg" 4
+			cd "$CURRENT_DIR" || exit
+
 		done
 		;;
-	"uninstall")
-		export DESTDIR=/
-		shift 1
-		case "$@" in
-			"--help" | "-h") help uninstall ;;
-		esac
-		[ -z "${1}" ] && usage uninstall
-		[ "$(id -u)" != "0" ] &&
-			{
-				neko_msg error "You must have root permissions to run this command"
-				exit
-			}
+	find)
 		for arg
 		do
-			neko_prepare "${arg}"
-			neko_msg prompt "Uninstall ${pkgname}? [y/n]"
-			read -r choice
-			case "${choice}" in
-				"y" | "Y" | "yes" | "Yes") neko_msg normal "Uninstalling ${pkgname}..." ;;
-				"n" | "N" | "no" | "No") neko_msg normal "Aborting..."; exit ;;
-				*) neko_msg error "Invalid option: ${choice}"; exit ;;
-			esac
-			neko_msg normal "Uninstalling ${arg}..."
-			if
-				neko_uninstall "${arg}"
-				neko_license_uninstall
-			then
-				neko_msg success "Successfully uninstalled ${arg}"
-			else
-				neko_msg error "Failed to uninstall ${arg}"
-			fi
-		done
-		;;
-	"find")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help find ;;
-		esac
-		[ -z "${1}" ] && usage find
-		[ ! -d "${pkgs_dir}" ] &&
-			{
-				neko_msg error "No srcpkgs directory found"
-				neko_msg normal "Run ${0} init"
-				exit
-			}
-		for arg
-		do
-			neko_msg normal "$(find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" | wc -l) result(s) found for ${arg}"
-			find "${pkgs_dir}" ! -name srcpkgs -prune -name "*${arg}*" |
+			FIND_DIR=
+			[ -d /usr/share/neko/srcpkgs ] && FIND_DIR=/usr/share/neko/srcpkgs
+			[ -d "$CURRENT_DIR"/srcpkgs ] && FIND_DIR="$CURRENT_DIR"/srcpkgs
+			find "$FIND_DIR" ! -name "srcpkgs" -prune -name "*$arg*" |
 				while read -r line
 				do
-					. "${line}"/template 2>/dev/null
-					# TODO
-					# Find better way to find sub pkgs such as -devel
-					# At the moment, one must type the exact name
-					# e.g. neko find musl-devel
-					if [ -n "$(command -v "$(echo "${arg}" | sed 's/\-/_/g')"_pkg)" ]
-					then
-						"$(echo "${arg}" | sed 's/\-/_/g')"_pkg
-					fi
-					# otherwise <pkgname>-git-_1 can occur
-					if [ -n "${distfiles}" ]
-					then
-						printf "[1m%s[0m\t%s\n" "${pkgname}-${version}_${revision}" "${short_desc}"
-					else
-						printf "[1m%s[0m\t%s\n" "${pkgname}_${revision}" "${short_desc}"
-					fi
-					unset distfiles
-					unset pkgname
-					unset version
-					unset revision
-					unset short_desc
+					. "$line"/template
+						printf "[1m%s[0m\t%s\n" "$pkgname" "$short_desc"
+					for var in pkgname short_desc
+					do
+						unset "$var"
+					done
 				done
 		done
 		;;
-	"new")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help new ;;
-		esac
-		[ -d "${pkgs_dir}"/"${1}" ] &&
+	clean)
+		[ $# -gt 1 ] && help clean
+		[ "$(id -u)" = "0" ] &&
 			{
-				neko_msg error "There's already a template for ${1}"
+				msg normal "Cleaning root dir..."
+				rm -rf /usr/share/neko/master/root/* &&
+					msg success "Successfully cleaned root dir" ||
+						msg error "Failed to clean root dir" 4
+				msg normal "Cleaning src dir..."
+				rm -rf /usr/share/neko/master/src/* &&
+					msg success "Successfully cleaned src dir" ||
+						msg error "Failed to clean src dir" 4
 				exit
 			}
-		neko_msg normal "Making a base template for ${1}..."
-		if
-			mkdir -p "${pkgs_dir}"/"${1}"
-			{
-				cat << _EOF
-pkgname="${1}"
-short_desc="Describe the pkg shortly"
-deps="deps go here"
-version="1.0"
-revision="1"
-distfiles="https://url.to/source/pkgname-\${version}.tar.gz"
-#archive="\${distfiles##*/}"
-#wrksrc="\${pkgname}-\${version}"
-build_style="makefile"
-#make_build_args="CC=\${CC}"
-#make_install_args="DESTDIR=\${DESTDIR}"
-license="GPL-3.0-or-later"
-
-#do_build()
-#{
-#	make "\${make_build_args}"
-#}
-
-#do_install()
-#{
-#	make "\${make_install_args}" install
-#}
-_EOF
-			} >> "${pkgs_dir}"/"${1}"/template
-		then
-			neko_msg success "Made a template for ${1} in ${pkgs_dir}/${1}"
-			vi "${pkgs_dir}"/"${1}"/template
-		else
-			neko_msg error "Failed to make a template for ${1}"
-		fi
-		;;
-	"clean")
-		shift 1
-		case "$@" in
-			"--help" | "-h") help clean ;;
-		esac
-		[ "$(id)" = "0" ] &&
-			{
-				neko_msg normal "Cleaning master directory..."
-				if
-					rm -rf "${root_master_dir:?}"/*
-				then
-					neko_msg success "Successfully cleaned master directory"
-				else
-					neko_msg error "Failed to clean master directory"
-					exit
-				fi
-				neko_msg normal "Cleaning source directory..."
-				if
-					rm -rf "${root_src_dir:?}"/*
-				then
-					neko_msg success "Successfully cleaned source directory"
-				else
-					neko_msg error "Failed to clean source directory"
-					exit
-				fi
-			}
-		[ "$(id)" != "0" ] &&
-			{
-				neko_msg normal "Cleaning master directory..."
-				if
-					rm -rf "${master_dir:?}"/*
-				then
-					neko_msg success "Successfully cleaned master directory"
-				else
-					neko_msg error "Failed to clean master directory"
-					exit
-				fi
-				neko_msg normal "Cleaning source directory..."
-				if
-					rm -rf "${src_dir:?}"/*
-				then
-					neko_msg success "Successfully cleaned source directory"
-				else
-					neko_msg error "Failed to clean source directory"
-					exit
-				fi
-			}
-		;;
-	"zap")
-		neko_zap
-		;;
-	"help" | "--help" | "-h")
-		case "${2}" in
-			"neko") help neko ;;
-			"init") help init ;;
-			"pkg") help pkg ;;
-			"em" | "emerge") help emerge ;;
-			"uninstall") help uninstall ;;
-			"find") help find ;;
-			"clean") help clean ;;
-			"zap") help zap ;;
-			"help") help help ;;
-			*) help neko ;;
-		esac
+		
+		msg normal "Cleaning root dir..."
+		rm -rf "${CURRENT_DIR:?}"/master/root/* &&
+				msg success "Successfully cleaned root dir" ||
+					msg error "Failed to clean root dir" 4
+		msg normal "Cleaning src dir..."
+		rm -rf "${CURRENT_DIR:?}"/master/src/* &&
+				msg success "Successfully cleaned src dir" ||
+					msg error "Failed to clean src dir" 4
+		msg normal "Cleaning db dir..."
+		rm -rf "${CURRENT_DIR:?}"/master/db/* &&
+				msg success "Successfully cleaned db dir" ||
+					msg error "Failed to clean db dir" 4
 		;;
 	*)
-		neko_msg error "Unknown option ${1}"
-		neko_msg normal "Use ${0} help"
+		msg error "Unknown command: $1" 1
+		;;
 esac
+exit 0

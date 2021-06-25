@@ -1,0 +1,11 @@
+--- a/config.def.h	2021-05-29 23:26:10.717091549 -0600
++++ b/config.def.h	2021-05-29 23:26:30.585093051 -0600
+@@ -5,7 +5,7 @@
+  *
+  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
+  */
+-static char *font = "Liberation Mono:pixelsize=12:antialias=true:autohint=true";
++static char *font = "FiraCode:pixelsize=12:antialias=true:autohint=true";
+ static int borderpx = 2;
+ 
+ /*

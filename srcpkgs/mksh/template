@@ -5,7 +5,7 @@ revision="1"
 distfiles="http://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-${version}.tgz"
 wrksrc="mksh"
 license="custom"
-license_file="${files_dir}/TaC-mksh.txt"
+license_file="${FILES_DIR}/TaC-mksh.txt"
 
 do_build()
 {
@@ -16,6 +16,5 @@ do_install()
 {
 	pkg_install bin mksh
 	pkg_install man mksh.1
-	mv dot.mkshrc .mkshrc
-	pkg_install conf .mkshrc /skel
+	pkg_install conf dot.mkshrc /skel .mkshrc
 }

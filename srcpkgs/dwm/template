@@ -1,6 +1,6 @@
 pkgname="dwm"
-deps="libXinerama-devel libXft-devel freetype-devel"
 short_desc="Dynamic window manager"
+deps="libXinerama-devel libXft-devel freetype-devel"
 version="6.2"
 revision="1"
 distfiles="https://dl.suckless.org/dwm/dwm-${version}.tar.gz"

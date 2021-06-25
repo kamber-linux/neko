@@ -1,6 +1,5 @@
 pkgname="dash"
 short_desc="Command interpreter (shell)"
-deps="bison"
 version="0.5.11.3"
 revision="1"
 distfiles="http://gondor.apana.org.au/~herbert/dash/files/dash-${version}.tar.gz"

@@ -1,5 +1,5 @@
 pkgname="openssh"
-short_desc=""
+short_desc="Port of OpenBSD's excellent OpenSSH"
 version="8.6p1"
 revision="1"
 distfiles="https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-${version}.tar.gz"

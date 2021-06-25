@@ -1,0 +1,11 @@
+--- a/scripts/install	2021-06-13 00:40:10.179704108 -0600
++++ b/scripts/install	2021-06-13 00:41:23.232701261 -0600
+@@ -17,7 +17,7 @@
+ 	esac
+ done
+ 
+-prefix=${1?'prefix missed'}
++prefix=$DESTDIR${1?'prefix missed'}
+ 
+ while read type perm name
+ do

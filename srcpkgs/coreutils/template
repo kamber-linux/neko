@@ -1,6 +1,6 @@
 pkgname="coreutils"
 short_desc="coreutils meta package"
-deps="sbase-git ubase"
+deps="sbase ubase"
 revision="1"
 build_style="meta"
 license="Public-Domain"

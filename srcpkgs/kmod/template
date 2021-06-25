@@ -9,7 +9,6 @@ license="GPL-2.0-or-later LGPL-2.1-or-later"
 
 libkmod_pkg()
 {
-	pkgname="libkmod"
 	short_desc="kmod - shared runtime library"
 	do_install()
 	{
@@ -19,7 +18,6 @@ libkmod_pkg()
 
 libkmod_devel_pkg()
 {
-	pkgname="libkmod"
 	short_desc="libkmod - developement files"
 	deps="libkmod"
 	do_install()

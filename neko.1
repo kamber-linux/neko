@@ -1,30 +1,27 @@
 .TH NEKO 1
 .SH NAME
-neko \- WIP package manager written in POSIX shell / utilities
+neko \- package manager written in POSIX shell / utilities
 .SH SYNOPSIS
 .B neko
-[\fIOPTIONS\fR] [\fIPKG\fR]
+COMMANDS [\fIOPTIONS\fR] [\fITARGET\fR]
 .SH DESCRIPTION
 This is a WIP package manager inspired by VOID's xbps-src bash script package builder.
-.SH OPTIONS
+.SH COMMANDS
 .TP
-.BR "init"
-Will initialize the environment for building packages and update changes made in srcpkgs
-.TP
-.BR "clean"
-Cleans up the source directory
-.TP
-.BR "zap"
-Will totally remove everything from the neko base directory
+.BR "help [\fICOMMAND\fR]"
+Quick way to get help for \fICOMMAND\fR
 .TP
 .BR "pkg \fIPKG\fR"
-Will build and install \fIPKG\fR into the master directory
+Will build and install \fIPKG\fR into the master root directory
 .TP
 .BR "em, emerge \fIPKG\fR"
-Will build \fIPKG\fR into the master directory and install to the system
-.TP
-.BR "find \fIPKG\fR"
-Will search for and list \fIPKG\fR from srcpkgs
+Will build \fIPKG\fR into the master directory and install to the chosen system
 .TP
 .BR "uninstall \fIPKG\fR"
-Will uninstall \fIPKG\fR from the system
+Will uninstall \fIPKG\fR from the chosen system
+.TP
+.BR "find \fIPKG\fR"
+Will search for and list \fIPKG\fR from srcpkgs with the short description
+.TP
+.BR "clean"
+Cleans up the master root directory and master source directory

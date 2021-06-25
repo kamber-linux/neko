@@ -1,0 +1,7 @@
+pkgname="byacc"
+short_desc="LALR(1) parser generator"
+version="20210520"
+revision="1"
+distfiles="https://invisible-mirror.net/archives/byacc/byacc-${version}.tgz"
+build_style="configure"
+license="Public-Domain"

@@ -1,0 +1,10 @@
+--- a/GNUmakefile	2021-05-30 18:20:36.555206411 -0600
++++ b/GNUmakefile	2021-05-30 18:21:02.442208369 -0600
+@@ -21,7 +21,6 @@
+ 	mkdir -p -m 0755 ${DESTDIR}${MANDIR}/man1
+ 	mkdir -p -m 0755 ${DESTDIR}${MANDIR}/man5
+ 	cp -f ${PROG} ${DESTDIR}${BINDIR}
+-	chown ${BINOWN}:${BINGRP} ${DESTDIR}${BINDIR}/${PROG}
+ 	chmod ${BINMODE} ${DESTDIR}${BINDIR}/${PROG}
+ 	[ -n "${PAM_DOAS}" ] && cp ${PAM_DOAS} ${DESTDIR}${PAMDIR}/doas || true
+ 	[ -n "${PAM_DOAS}" ] && chmod 0644 ${DESTDIR}${PAMDIR}/doas || true

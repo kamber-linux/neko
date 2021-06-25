@@ -1,0 +1,8 @@
+pkgname="ncurses"
+short_desc="Free software emulation of curses in System V Release 4.0 (SVr4), and more"
+version="6.2"
+revision="1"
+distfiles="https://invisible-mirror.net/archives/ncurses/ncurses-${version}.tar.gz"
+build_style="configure"
+license="MIT"
+license_file="COPYING"

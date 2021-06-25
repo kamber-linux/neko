@@ -6,12 +6,11 @@ revision="1"
 distfiles="https://www.freedesktop.org/software/fontconfig/release/fontconfig-${version}.tar.gz"
 build_style="gnu-configure"
 CC="gcc"
-license="custom"
+license="MIT"
 license_file="COPYING"
 
 fontconfig_devel_pkg()
 {
-	pkgname="fontconfig-devel"
 	short_desc="fontconfig - developement files"
 	do_install()
 	{
