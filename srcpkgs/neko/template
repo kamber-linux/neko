@@ -1,7 +1,7 @@
-pkgname="neko-git"
+pkgname="neko"
 short_desc="WIP package manager written in POSIX shell / utilities"
-giturl="https://github.com/kawaiiamber/neko.git"
 revision="1"
+giturl="https://github.com/kamber-linux/neko.git"
 build_style="makefile"
 
 # neko doesn't build

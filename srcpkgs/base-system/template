@@ -1,6 +1,6 @@
 pkgname="base-system"
 short_desc="base-system meta package"
-deps="musl-devel musl coreutils mksh dash tcc gcc bmake make bearssl"
+deps="musl-devel musl coreutils mksh dash tcc gcc bmake make bearssl byacc"
 revision="1"
 build_style="meta"
 license="Public-Domain"

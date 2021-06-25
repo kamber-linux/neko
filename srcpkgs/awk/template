@@ -1,6 +1,5 @@
 pkgname="awk"
 short_desc="Pattern-directed scanning and processing language"
-deps="bison"
 version="20180827"
 revision="1"
 distfiles="https://github.com/onetrueawk/awk/archive/refs/tags/${version}.tar.gz"
@@ -11,7 +10,6 @@ license_file="LICENSE"
 
 do_install()
 {
-	mv a.out awk
-	pkg_install bin awk
+	pkg_install bin a.out awk
 	pkg_install man awk.1
 }

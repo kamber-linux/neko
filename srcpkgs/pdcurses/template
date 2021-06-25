@@ -1,0 +1,14 @@
+pkgname="pdcurses"
+short_desc="Implementation of X/Open curses for multiple platforms"
+version="3.9"
+revision="1"
+distfiles="https://downloads.sourceforge.net/project/pdcurses/pdcurses/${version}/PDCurses-${version}.tar.gz"
+wrksrc="PDCurses-${version}"
+build_style="configure"
+CC="gcc"
+license="Public-Domain"
+
+pre_build()
+{
+	cd x11
+}

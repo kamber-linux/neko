@@ -1,0 +1,7 @@
+pkgname="gawk"
+short_desc="Pattern scanning and processing language"
+version="5.1.0"
+revision="1"
+distfiles="https://ftp.gnu.org/gnu/gawk/gawk-${version}.tar.gz"
+build_style="configure"
+license="GPL-3.0-or-later"

@@ -10,7 +10,6 @@ license_file="COPYRIGHT"
 
 musl_devel_pkg()
 {
-	pkgname="musl-devel"
 	short_desc="musl - developement files"
 	do_install()
 	{

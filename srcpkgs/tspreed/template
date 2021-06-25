@@ -1,10 +1,10 @@
-pkgname="tspreed-git"
+pkgname=tspreed
 short_desc="Terminal RSVP speed reader with Spritz-like functionality"
-commit="d059dde0b3a05401e78735a3aacaaa27e14c49a9"
-revision="1"
+commit=d059dde0b3a05401e78735a3aacaaa27e14c49a9
+revision=1
 giturl="https://github.com/n-ivkovic/tspreed.git"
-build_style="makefile"
-license="GPL-3.0-or-later"
+build_style=makefile
+license=GPL-3.0-or-later
 
 # tspreed doesn't build
 do_build()
