@@ -1,0 +1,12 @@
+pkgname="base-files"
+short_desc="Files for Sakura Linux"
+revision="1"
+build_style="meta"
+license="Public-Domain"
+
+do_install()
+{
+	mkdir -p "${DESTDIR}"/etc
+	cp "${files_dir}"/os-release "${DESTDIR}"/etc
+	chmod 644 "${DESTDIR}"/etc/os-release
+}

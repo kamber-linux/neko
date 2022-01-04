@@ -1,4 +1,5 @@
 pkgname="st"
+deps="pkg-config fontconfig-devel libX11-devel libXft-devel"
 short_desc="Simple terminal"
 version="0.8.4"
 revision="1"
